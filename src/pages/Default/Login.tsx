@@ -110,11 +110,14 @@ export default function LoginPage() {
     );
 
     toast.success(`Welcome back, ${user.name}`);
-    navigate("/dashboard");
+    
+    // Role-based redirection
+    const rolePath = user.role.toLowerCase();
+    navigate(`/${rolePath}/dashboard`);
   };
 
   return (
-    <main className="min-h-svh bg-[#f6f8fc] lg:h-svh lg:overflow-hidden">
+    <main className="min-h-svh bg-slate-50 dark:bg-slate-950 lg:h-svh lg:overflow-hidden">
       <div className="grid min-h-svh lg:h-svh lg:grid-cols-[0.92fr_1.08fr]">
         <section className="relative hidden h-svh overflow-hidden bg-[#07113d] px-10 py-8 text-white lg:block">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_0%,rgba(59,130,246,0.38),transparent_34%),radial-gradient(circle_at_10%_85%,rgba(99,102,241,0.34),transparent_34%)]" />
@@ -205,31 +208,31 @@ export default function LoginPage() {
         <section className="flex min-h-svh items-center justify-center px-5 py-8 lg:h-svh lg:min-h-0">
           <div className="w-full max-w-[460px]">
             <div className="mb-8 flex items-center gap-3 lg:hidden">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
                 <Building2 className="h-6 w-6" />
               </div>
 
               <div>
-                <h1 className="text-xl font-semibold text-slate-950">
+                <h1 className="text-xl font-bold tracking-tight text-slate-950 dark:text-white">
                   Mini ERP
                 </h1>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Business Management Simplified
                 </p>
               </div>
             </div>
 
-            <Card className="rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/80">
+            <Card className="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-2xl shadow-slate-200/80 dark:shadow-none">
               <CardHeader className="items-center space-y-3 pb-5 pt-8 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-50 text-blue-600">
+                <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
                   <LockKeyhole className="h-8 w-8" />
                 </div>
 
                 <div>
-                  <CardTitle className="text-3xl font-semibold tracking-tight text-slate-950">
+                  <CardTitle className="text-3xl font-bold tracking-tight text-slate-950 dark:text-slate-50">
                     Welcome back
                   </CardTitle>
-                  <CardDescription className="mt-2 text-sm">
+                  <CardDescription className="mt-2 text-sm text-slate-500 dark:text-slate-400">
                     Sign in to continue to Mini ERP Dashboard
                   </CardDescription>
                 </div>
@@ -293,7 +296,7 @@ export default function LoginPage() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600">
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                       <Checkbox
                         checked={remember}
                         onCheckedChange={(checked) =>
@@ -321,17 +324,17 @@ export default function LoginPage() {
                 </form>
 
                 <div className="mt-7 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-slate-200" />
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                  <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
+                  <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                     <ShieldCheck className="h-4 w-4" />
                     Secure login
                   </div>
-                  <div className="h-px flex-1 bg-slate-200" />
+                  <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
                 </div>
               </CardContent>
             </Card>
 
-            <p className="mt-6 text-center text-sm text-slate-500">
+            <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
               © 2026 Mini ERP. All rights reserved.
             </p>
           </div>

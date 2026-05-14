@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { Navigate } from "react-router-dom";
 import { SuspenseLoader } from "@/components/loaders/SuspenseLoader";
 import type { AppRoute } from "./utils";
 
@@ -8,6 +9,10 @@ const Register = lazy(() => import("@/pages/Default/Regester"));
 const NotFound = lazy(() => import("@/pages/Default/Notfoundpages"));
 
 export const defaultRoutes: AppRoute[] = [
+  {
+    path: "/",
+    element: <Navigate to="/login" replace />,
+  },
   {
     path: "/login",
     element: (
