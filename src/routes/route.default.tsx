@@ -9,7 +9,7 @@ const NotFound = lazy(() => import("@/pages/Default/Notfoundpages"));
 
 export const defaultRoutes: AppRoute[] = [
   {
-    path: "/",
+    path: "/login",
     element: (
       <Suspense fallback={<SuspenseLoader />}>
         <Login />
