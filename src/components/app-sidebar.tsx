@@ -64,7 +64,7 @@ export function AppSidebar() {
                             h-11 px-4 transition-all duration-200 rounded-lg
                             ${location.pathname === item.link 
                               ? "!bg-blue-600 !text-white shadow-md hover:!bg-blue-700" 
-                              : "text-slate-600 hover:bg-slate-100"
+                              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
                             }
                           `}
                         >
@@ -89,7 +89,7 @@ export function AppSidebar() {
                           h-11 px-4 transition-all duration-200 rounded-lg
                           ${location.pathname === group.link 
                             ? "!bg-blue-600 !text-white shadow-md hover:!bg-blue-700" 
-                            : "text-slate-600 hover:bg-slate-100"
+                            : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
                           }
                         `}
                       >
@@ -111,9 +111,11 @@ export function AppSidebar() {
           {/* Application Menu (Hidden by default, shows on hover or focus-within) */}
           <div className="absolute bottom-full left-0 w-full mb-2 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-200 ease-out z-50">
             <div className="bg-white dark:bg-card border dark:border-slate-800 rounded-lg p-2 shadow-xl ring-1 ring-black/5 space-y-1">
-              <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center justify-between">
-                <span>Application</span>
-                <ThemeToggle />
+              <div className="px-2 py-2 text-[10px] font-bold text-muted-foreground dark:text-slate-500 uppercase tracking-widest flex items-center justify-between">
+                <span>Application Settings</span>
+                <div className="scale-90 origin-right">
+                  <ThemeToggle />
+                </div>
               </div>
               <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors group/item text-slate-700 dark:text-slate-300">
                 <Settings size={16} className="text-slate-400 dark:text-slate-500 group-hover/item:text-slate-600 dark:group-hover/item:text-slate-300" />
