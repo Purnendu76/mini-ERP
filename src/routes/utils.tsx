@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
 import type { RouteObject } from "react-router-dom";
-import type { TablerIcon } from "@tabler/icons-react";
+import type { LucideIcon } from "lucide-react";
 
 export type UserRole = "Admin" | "Manager" | "Staff";
 
 export type AppRoute = {
   label?: string;
-  icon?: TablerIcon | string;
+  icon?: LucideIcon | string;
   path: string;
   element: ReactNode;
   children?: AppRoute[];
@@ -16,7 +16,7 @@ export type AppRoute = {
 
 export type NavbarMenu = {
   label: string;
-  icon?: TablerIcon | string;
+  icon?: LucideIcon | string;
   initiallyOpened?: boolean;
   link?: string;
   submenus?: NavbarSubmenu[];
@@ -25,6 +25,7 @@ export type NavbarMenu = {
 export type NavbarSubmenu = {
   label: string;
   link: string;
+  icon?: LucideIcon | string; // Added icon support for submenus
 };
 
 export function generateRouterConfig(appRoutes: AppRoute[]): RouteObject[] {
@@ -75,6 +76,7 @@ export function generateNavbarMenu(
         .map((child) => ({
           label: child.label!,
           link: createLink(route.path, child.path),
+          icon: child.icon,
         }));
       
       // If it has submenus, the main link might not be needed or could be the first child

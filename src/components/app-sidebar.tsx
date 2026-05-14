@@ -51,21 +51,50 @@ export function AppSidebar() {
                 {group.label}
               </SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
-                  {group.submenus?.map((item) => (
-                    <SidebarMenuItem key={item.label}>
-                      <SidebarMenuButton asChild isActive={location.pathname === item.link}>
-                        <Link to={item.link}>
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
+                <SidebarMenu className="gap-1.5">
+                  {group.submenus?.map((item) => {
+                    const SubIcon = LayoutDashboard; // Fallback or dynamic icon mapping
+                    return (
+                      <SidebarMenuItem key={item.label}>
+                        <SidebarMenuButton 
+                          asChild 
+                          isActive={location.pathname === item.link}
+                          className={`
+                            h-11 px-4 transition-all duration-200 rounded-lg
+                            ${location.pathname === item.link 
+                              ? "!bg-blue-600 !text-white shadow-md hover:!bg-blue-700" 
+                              : "text-slate-600 hover:bg-slate-100"
+                            }
+                          `}
+                        >
+                          <Link to={item.link} className="flex items-center gap-3">
+                            {item.icon ? (
+                              <item.icon size={20} strokeWidth={location.pathname === item.link ? 2.5 : 2} />
+                            ) : (
+                              <LayoutDashboard size={20} strokeWidth={location.pathname === item.link ? 2.5 : 2} />
+                            )}
+                            <span className="font-bold text-[15px]">{item.label}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
                   {group.link && (
                     <SidebarMenuItem key={group.label}>
-                      <SidebarMenuButton asChild isActive={location.pathname === group.link}>
-                        <Link to={group.link}>
-                          <span>{group.label}</span>
+                      <SidebarMenuButton 
+                        asChild 
+                        isActive={location.pathname === group.link}
+                        className={`
+                          h-11 px-4 transition-all duration-200 rounded-lg
+                          ${location.pathname === group.link 
+                            ? "!bg-blue-600 !text-white shadow-md hover:!bg-blue-700" 
+                            : "text-slate-600 hover:bg-slate-100"
+                          }
+                        `}
+                      >
+                        <Link to={group.link} className="flex items-center gap-3">
+                          <Icon size={20} strokeWidth={location.pathname === group.link ? 2.5 : 2} />
+                          <span className="font-bold text-[15px]">{group.label}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { SuspenseLoader } from "@/components/loaders/SuspenseLoader";
 import AppLayout from "@/Layout/AppLayout";
 import type { AppRoute } from "./utils";
+import { LayoutGrid, Package, CreditCard, Receipt, Users, UsersRound } from "lucide-react";
 
 // Lazy-loaded components
 const Managers = lazy(() => import("@/pages/Manager/Manages"));
@@ -10,16 +11,18 @@ const AdminDashboard = lazy(() => import("@/pages/Admin/AdminDashboard"));
 const Expenses = lazy(() => import("@/pages/Admin/Expenses"));
 const Invoices = lazy(() => import("@/pages/Admin/Invoices"));
 const Products = lazy(() => import("@/pages/Admin/Products"));
-const Users = lazy(() => import("@/pages/Admin/Users"));
+const UsersList = lazy(() => import("@/pages/Admin/Users"));
 
 export const managerRoutes: AppRoute = {
   label: "Managers",
   path: "manager",
+  icon: UsersRound,
   element: <AppLayout />,
   children: [
     {
       label: "Managers List",
       path: "managers",
+      icon: UsersRound,
       element: (
         <Suspense fallback={<SuspenseLoader />}>
           <Managers />
@@ -29,6 +32,7 @@ export const managerRoutes: AppRoute = {
     {
       label: "Dashboard",
       path: "dashboard",
+      icon: LayoutGrid,
       element: (
         <Suspense fallback={<SuspenseLoader />}>
           <AdminDashboard />
@@ -38,6 +42,7 @@ export const managerRoutes: AppRoute = {
     {
       label: "Products",
       path: "products",
+      icon: Package,
       element: (
         <Suspense fallback={<SuspenseLoader />}>
           <Products />
@@ -47,6 +52,7 @@ export const managerRoutes: AppRoute = {
     {
       label: "Expenses",
       path: "expenses",
+      icon: CreditCard,
       element: (
         <Suspense fallback={<SuspenseLoader />}>
           <Expenses />
@@ -56,6 +62,7 @@ export const managerRoutes: AppRoute = {
     {
       label: "Invoices",
       path: "invoices",
+      icon: Receipt,
       element: (
         <Suspense fallback={<SuspenseLoader />}>
           <Invoices />
@@ -65,9 +72,10 @@ export const managerRoutes: AppRoute = {
     {
       label: "Users",
       path: "users",
+      icon: Users,
       element: (
         <Suspense fallback={<SuspenseLoader />}>
-          <Users />
+          <UsersList />
         </Suspense>
       ),
     },

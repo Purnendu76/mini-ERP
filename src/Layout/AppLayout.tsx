@@ -3,10 +3,22 @@ import { AppSidebar } from "@/components/app-sidebar"
 import { Outlet, useLocation } from "react-router-dom"
 import { useAppRoutes } from "@/context/RouteContext"
 import { Settings, DownloadCloud, LayoutGrid } from "lucide-react"
-
+import { Suspense, useState, useEffect } from "react"
+import { SuspenseLoader } from "@/components/loaders/SuspenseLoader"
 export default function AppLayout() {
   const location = useLocation();
   const routes = useAppRoutes();
+  const [isPageLoading, setIsPageLoading] = useState(false);
+
+  // Trigger skeleton on route change for a smoother transition
+  useEffect(() => {
+    setIsPageLoading(true);
+    const timer = setTimeout(() => {
+      setIsPageLoading(false);
+    }, 400); // Small artificial delay to show the skeleton
+
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
 
   // Logic to find current page label
   const findPageLabel = () => {
@@ -60,7 +72,13 @@ export default function AppLayout() {
 
         {/* Content Area */}
         <div className="p-6 min-h-[calc(100vh-65px)]">
-          <Outlet />
+          {isPageLoading ? (
+            <SuspenseLoader />
+          ) : (
+            <Suspense fallback={<SuspenseLoader />}>
+              <Outlet />
+            </Suspense>
+          )}
         </div>
       </main>
     </SidebarProvider>
