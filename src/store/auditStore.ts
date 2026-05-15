@@ -11,32 +11,7 @@ interface AuditState {
 export const useAuditStore = create<AuditState>()(
   persist(
     (set) => ({
-      logs: [
-        {
-          id: "1",
-          timestamp: "2026-05-15 10:49:56",
-          action: "LOGIN",
-          entity: "USER",
-          user: {
-            name: "System Admin",
-            email: "admin@invoice-system.local",
-          },
-          ipAddress: "127.0.0.1",
-          details: "Method: EMAIL",
-        },
-        {
-          id: "2",
-          timestamp: "2026-05-14 14:17:01",
-          action: "LOGIN",
-          entity: "USER",
-          user: {
-            name: "System Admin",
-            email: "admin@invoice-system.local",
-          },
-          ipAddress: "127.0.0.1",
-          details: "Method: EMAIL",
-        },
-      ],
+      logs: [],
       addLog: (logData) =>
         set((state) => ({
           logs: [

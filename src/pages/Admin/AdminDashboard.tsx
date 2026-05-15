@@ -26,6 +26,13 @@ import {
   Users,
   WalletCards,
 } from "lucide-react";
+import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+
+import { useInvoiceStore } from "@/store/invoiceStore";
+import { useExpenseStore } from "@/store/expenseStore";
+import { useProductStore } from "@/store/productStore";
+import { useUserStore } from "@/store/userStore";
+import { useAuditStore } from "@/store/auditStore";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,123 +66,11 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const revenueData = [
-  { month: "Jan", revenue: 185000, expense: 76000 },
-  { month: "Feb", revenue: 210000, expense: 89000 },
-  { month: "Mar", revenue: 245000, expense: 98000 },
-  { month: "Apr", revenue: 275000, expense: 105000 },
-  { month: "May", revenue: 315000, expense: 124000 },
-  { month: "Jun", revenue: 352000, expense: 138000 },
-  { month: "Jul", revenue: 389000, expense: 146000 },
-];
+// Dynamic data will be generated inside the component using useMemo
 
-const productStockData = [
-  { category: "Electronics", stock: 320 },
-  { category: "Office", stock: 220 },
-  { category: "Software", stock: 180 },
-  { category: "Hardware", stock: 145 },
-  { category: "Utilities", stock: 95 },
-];
+// Activity data will be generated inside the component from Audit logs
 
-const invoiceStatusData = [
-  { name: "Paid", value: 62, fill: "#2563eb" },
-  { name: "Pending", value: 24, fill: "#f59e0b" },
-  { name: "Overdue", value: 10, fill: "#ef4444" },
-  { name: "Cancelled", value: 4, fill: "#64748b" },
-];
-
-const recentInvoices = [
-  {
-    invoice: "INV-1023",
-    customer: "Aarav Enterprises",
-    amount: "₹42,500",
-    status: "Paid",
-    date: "14 May 2026",
-  },
-  {
-    invoice: "INV-1024",
-    customer: "BluePeak Systems",
-    amount: "₹31,200",
-    status: "Pending",
-    date: "13 May 2026",
-  },
-  {
-    invoice: "INV-1025",
-    customer: "Nova Retail",
-    amount: "₹58,900",
-    status: "Overdue",
-    date: "12 May 2026",
-  },
-  {
-    invoice: "INV-1026",
-    customer: "GreenLine Traders",
-    amount: "₹22,700",
-    status: "Paid",
-    date: "11 May 2026",
-  },
-];
-
-const activities = [
-  {
-    title: "New user added",
-    description: "Manager account created for operations team",
-    time: "12 min ago",
-  },
-  {
-    title: "Invoice marked as paid",
-    description: "INV-1023 payment received successfully",
-    time: "42 min ago",
-  },
-  {
-    title: "Product stock updated",
-    description: "Low stock alert cleared for office supplies",
-    time: "1 hr ago",
-  },
-  {
-    title: "Expense request submitted",
-    description: "Travel expense waiting for approval",
-    time: "2 hrs ago",
-  },
-];
-
-const kpiCards = [
-  {
-    title: "Total Users",
-    value: "124",
-    change: "+12.5%",
-    trend: "up",
-    description: "Active system users",
-    icon: Users,
-    gradient: "from-blue-600 to-indigo-600",
-  },
-  {
-    title: "Total Products",
-    value: "486",
-    change: "+8.2%",
-    trend: "up",
-    description: "Inventory items",
-    icon: Boxes,
-    gradient: "from-emerald-600 to-teal-600",
-  },
-  {
-    title: "Total Revenue",
-    value: "₹2.45L",
-    change: "+18.4%",
-    trend: "up",
-    description: "Monthly invoice value",
-    icon: IndianRupee,
-    gradient: "from-violet-600 to-purple-600",
-  },
-  {
-    title: "Total Expenses",
-    value: "₹98.2K",
-    change: "-4.1%",
-    trend: "down",
-    description: "Controlled spending",
-    icon: ReceiptText,
-    gradient: "from-orange-500 to-amber-500",
-  },
-];
+// KPI data generated inside component
 
 const revenueChartConfig = {
   revenue: {
@@ -202,17 +97,192 @@ const invoiceChartConfig = {
 } satisfies ChartConfig;
 
 export default function AdminDashboard() {
+  const { invoices } = useInvoiceStore();
+  const { expenses } = useExpenseStore();
+  const { products } = useProductStore();
+  const { users } = useUserStore();
+  const { logs } = useAuditStore();
+
   const [period, setPeriod] = useState("monthly");
   const [businessUnit, setBusinessUnit] = useState("all");
   const [invoiceStatus, setInvoiceStatus] = useState("all");
 
-  const filteredInvoices = useMemo(() => {
-    if (invoiceStatus === "all") return recentInvoices;
+  const revenueData = useMemo(() => {
+    const months = Array.from({ length: 7 }, (_, i) => {
+      const date = subMonths(new Date(), 6 - i);
+      return {
+        month: format(date, "MMM"),
+        date,
+        revenue: 0,
+        expense: 0,
+      };
+    });
 
-    return recentInvoices.filter(
-      (invoice) => invoice.status.toLowerCase() === invoiceStatus
-    );
-  }, [invoiceStatus]);
+    months.forEach((m) => {
+      const start = startOfMonth(m.date);
+      const end = endOfMonth(m.date);
+
+      invoices.forEach((inv) => {
+        const invDate = new Date(inv.invoiceDate);
+        if (isWithinInterval(invDate, { start, end })) {
+          m.revenue += inv.total;
+        }
+      });
+
+      expenses.forEach((exp) => {
+        const expDate = new Date(exp.expenseDate);
+        if (isWithinInterval(expDate, { start, end })) {
+          m.expense += exp.amount;
+        }
+      });
+    });
+
+    return months;
+  }, [invoices, expenses]);
+
+  const productStockData = useMemo(() => {
+    const categories: Record<string, number> = {};
+    products.forEach((p) => {
+      categories[p.category] = (categories[p.category] || 0) + p.stock;
+    });
+
+    return Object.entries(categories)
+      .map(([category, stock]) => ({ category, stock }))
+      .sort((a, b) => b.stock - a.stock)
+      .slice(0, 5);
+  }, [products]);
+
+  const invoiceStatusData = useMemo(() => {
+    const total = invoices.length;
+    if (total === 0) return [
+      { name: "Paid", value: 0, fill: "#2563eb" },
+      { name: "Pending", value: 0, fill: "#f59e0b" },
+      { name: "Overdue", value: 0, fill: "#ef4444" },
+      { name: "Cancelled", value: 0, fill: "#64748b" },
+    ];
+
+    const counts = {
+      Paid: invoices.filter((i) => i.status === "Paid").length,
+      Pending: invoices.filter((i) => i.status === "Pending").length,
+      Overdue: invoices.filter((i) => i.status === "Overdue").length,
+      Cancelled: invoices.filter((i) => i.status === "Cancelled").length,
+    };
+
+    return [
+      { name: "Paid", value: Math.round((counts.Paid / total) * 100), fill: "#2563eb" },
+      { name: "Pending", value: Math.round((counts.Pending / total) * 100), fill: "#f59e0b" },
+      { name: "Overdue", value: Math.round((counts.Overdue / total) * 100), fill: "#ef4444" },
+      { name: "Cancelled", value: Math.round((counts.Cancelled / total) * 100), fill: "#64748b" },
+    ];
+  }, [invoices]);
+
+  const recentInvoicesData = useMemo(() => {
+    const data = invoices.slice(0, 5).map(inv => ({
+      invoice: inv.invoiceNumber,
+      customer: inv.customerName,
+      amount: `₹${inv.total.toLocaleString()}`,
+      status: inv.status,
+      date: format(new Date(inv.invoiceDate), "dd MMM yyyy"),
+    }));
+
+    if (invoiceStatus === "all") return data;
+    return data.filter(inv => inv.status.toLowerCase() === invoiceStatus);
+  }, [invoices, invoiceStatus]);
+
+  const kpiCards = useMemo(() => {
+    const totalRevenue = invoices.reduce((sum, inv) => sum + inv.total, 0);
+    const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    
+    const formatValue = (val: number) => {
+      if (val >= 100000) return `₹${(val / 100000).toFixed(1)}L`;
+      if (val >= 1000) return `₹${(val / 1000).toFixed(1)}K`;
+      return `₹${val}`;
+    };
+
+    return [
+      {
+        title: "Total Users",
+        value: users.length.toString(),
+        change: "+0%",
+        trend: "up",
+        description: "Active system users",
+        icon: Users,
+        gradient: "from-blue-600 to-indigo-600",
+      },
+      {
+        title: "Total Products",
+        value: products.length.toString(),
+        change: "+0%",
+        trend: "up",
+        description: "Inventory items",
+        icon: Boxes,
+        gradient: "from-emerald-600 to-teal-600",
+      },
+      {
+        title: "Total Revenue",
+        value: formatValue(totalRevenue),
+        change: "+0%",
+        trend: "up",
+        description: "All-time revenue",
+        icon: IndianRupee,
+        gradient: "from-violet-600 to-purple-600",
+      },
+      {
+        title: "Total Expenses",
+        value: formatValue(totalExpenses),
+        change: "+0%",
+        trend: "down",
+        description: "All-time expenses",
+        icon: ReceiptText,
+        gradient: "from-orange-500 to-amber-500",
+      },
+    ];
+  }, [users, products, invoices, expenses]);
+
+  const healthMetrics = useMemo(() => {
+    const totalRevenue = invoices.reduce((sum, inv) => sum + inv.total, 0);
+    const revenueTarget = 1000000; // 10L Target
+    const revenueProgress = Math.min(Math.round((totalRevenue / revenueTarget) * 100), 100);
+
+    const inStockProducts = products.filter(p => p.status === "In Stock").length;
+    const stockProgress = products.length > 0 ? Math.round((inStockProducts / products.length) * 100) : 0;
+
+    const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const budget = 500000; // 5L Budget
+    const expenseProgress = Math.min(Math.round((totalExpenses / budget) * 100), 100);
+
+    return [
+      {
+        icon: TrendingUp,
+        title: "Revenue Target",
+        value: `${revenueProgress}%`,
+        progress: revenueProgress,
+        description: "Yearly target achieved",
+      },
+      {
+        icon: PackageSearch,
+        title: "Stock Health",
+        value: `${stockProgress}%`,
+        progress: stockProgress,
+        description: "Healthy inventory level",
+      },
+      {
+        icon: WalletCards,
+        title: "Expense Control",
+        value: `${expenseProgress}%`,
+        progress: expenseProgress,
+        description: "Budget usage tracker",
+      },
+    ];
+  }, [invoices, products, expenses]);
+
+  const activitiesData = useMemo(() => {
+    return logs.slice(0, 4).map(log => ({
+      title: log.action.charAt(0) + log.action.slice(1).toLowerCase() + " " + log.entity.toLowerCase(),
+      description: log.details,
+      time: log.timestamp,
+    }));
+  }, [logs]);
 
   const filterLabel = useMemo(() => {
     const unit =
@@ -540,7 +610,7 @@ export default function AdminDashboard() {
                     </TableHeader>
 
                     <TableBody>
-                      {filteredInvoices.map((invoice) => (
+                      {recentInvoicesData.map((invoice) => (
                         <TableRow key={invoice.invoice} className="border-slate-200 dark:border-slate-800">
                           <TableCell className="font-medium text-slate-950 dark:text-slate-50">
                             {invoice.invoice}
@@ -556,7 +626,7 @@ export default function AdminDashboard() {
                         </TableRow>
                       ))}
 
-                      {filteredInvoices.length === 0 && (
+                      {recentInvoicesData.length === 0 && (
                         <TableRow>
                           <TableCell
                             colSpan={5}
@@ -590,29 +660,16 @@ export default function AdminDashboard() {
               </CardHeader>
 
               <CardContent className="grid gap-5 md:grid-cols-3">
-                <HealthMetric
-                  icon={TrendingUp}
-                  title="Revenue Target"
-                  value="82%"
-                  progress={82}
-                  description="Monthly target achieved"
-                />
-
-                <HealthMetric
-                  icon={PackageSearch}
-                  title="Stock Health"
-                  value="74%"
-                  progress={74}
-                  description="Healthy inventory level"
-                />
-
-                <HealthMetric
-                  icon={WalletCards}
-                  title="Expense Control"
-                  value="68%"
-                  progress={68}
-                  description="Budget usage this month"
-                />
+                {healthMetrics.map((metric, index) => (
+                  <HealthMetric
+                    key={index}
+                    icon={metric.icon}
+                    title={metric.title}
+                    value={metric.value}
+                    progress={metric.progress}
+                    description={metric.description}
+                  />
+                ))}
               </CardContent>
             </Card>
           </motion.div>
@@ -631,14 +688,14 @@ export default function AdminDashboard() {
               </CardHeader>
 
               <CardContent className="space-y-4">
-                {activities.map((activity, index) => (
-                  <div key={activity.title} className="flex gap-3">
+                {activitiesData.map((activity, index) => (
+                  <div key={index} className="flex gap-3">
                     <div className="flex flex-col items-center">
                       <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
                         <CalendarDays className="h-4 w-4" />
                       </div>
 
-                      {index !== activities.length - 1 && (
+                      {index !== activitiesData.length - 1 && (
                         <div className="mt-2 h-full w-px bg-slate-200 dark:bg-slate-800" />
                       )}
                     </div>
@@ -656,6 +713,9 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 ))}
+                {activitiesData.length === 0 && (
+                  <p className="text-center text-sm text-slate-500 py-8">No recent activity</p>
+                )}
               </CardContent>
             </Card>
           </motion.div>
