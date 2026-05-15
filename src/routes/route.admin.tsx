@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { Outlet } from "react-router-dom";
 import { SuspenseLoader } from "@/components/loaders/SuspenseLoader";
 import AppLayout from "@/Layout/AppLayout";
 import type { AppRoute } from "./utils";
@@ -10,7 +11,12 @@ const AdminDetails = lazy(() => import("@/pages/Admin/AdminDetails"));
 const Expenses = lazy(() => import("@/pages/Admin/Expenses"));
 const Invoices = lazy(() => import("@/pages/Admin/Invoices"));
 const Products = lazy(() => import("@/pages/Admin/Products"));
-const UsersList = lazy(() => import("@/pages/Admin/Users"));
+const AuditLog = lazy(() => import("@/pages/Admin/AuditLog"));
+
+// User management sub-pages
+const ManageAdmins = lazy(() => import("@/pages/Admin/users/Manage-Admins"));
+const ManageManagers = lazy(() => import("@/pages/Admin/users/Manage-Managers"));
+const ManageStaffs = lazy(() => import("@/pages/Admin/users/Manage-Staffs"));
 
 export const adminRoutes: AppRoute = {
   label: "Admin",
@@ -62,9 +68,44 @@ export const adminRoutes: AppRoute = {
       label: "Users",
       path: "users",
       icon: Users,
+      element: <Outlet />,
+      children: [
+        {
+          label: "Manage Admins",
+          path: "manage-admins",
+          element: (
+            <Suspense fallback={<SuspenseLoader />}>
+              <ManageAdmins />
+            </Suspense>
+          ),
+        },
+        {
+          label: "Manage Staffs",
+          path: "staffs",
+          element: (
+            <Suspense fallback={<SuspenseLoader />}>
+              <ManageStaffs />
+            </Suspense>
+          ),
+        },
+        {
+          label: "Manage Managers",
+          path: "managers",
+          element: (
+            <Suspense fallback={<SuspenseLoader />}>
+              <ManageManagers />
+            </Suspense>
+          ),
+        },
+      ],
+    },
+    {
+      path: "audit-log",
+      label: "Audit Log",
+      icon: ShieldCheck,
       element: (
         <Suspense fallback={<SuspenseLoader />}>
-          <UsersList />
+          <AuditLog />
         </Suspense>
       ),
     },

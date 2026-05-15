@@ -9,16 +9,27 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
 } from "@/components/ui/sidebar";
 import { Link, useLocation } from "react-router-dom";
 import { useAppRoutes } from "@/context/RouteContext";
 import { generateNavbarMenu } from "@/routes/utils";
-import { LayoutDashboard, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, ChevronRight } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
+import { useState } from "react";
 
 export function AppSidebar() {
   const location = useLocation();
   const routes = useAppRoutes();
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
+    "Users": true // Default open Users for now as per design
+  });
+
+  const toggleMenu = (label: string) => {
+    setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }));
+  };
   
   // We use the helper function to build the menu structure from the actual routes
   const allMenuGroups = generateNavbarMenu(routes, location.pathname);
@@ -54,7 +65,61 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu className="gap-1.5">
                   {group.submenus?.map((item) => {
-                    const SubIcon = LayoutDashboard; // Fallback or dynamic icon mapping
+                    const hasSubmenus = item.submenus && item.submenus.length > 0;
+                    const isOpen = openMenus[item.label];
+                    const isActive = location.pathname.startsWith(item.link);
+
+                    if (hasSubmenus) {
+                      return (
+                        <SidebarMenuItem key={item.label}>
+                          <SidebarMenuButton 
+                            onClick={() => toggleMenu(item.label)}
+                            className={`
+                              h-11 px-4 transition-all duration-200 rounded-lg group
+                              ${isActive && !isOpen
+                                ? "!bg-blue-600 !text-white shadow-md" 
+                                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              }
+                            `}
+                          >
+                            <div className="flex items-center gap-3 w-full">
+                              {item.icon ? (
+                                <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                              ) : (
+                                <LayoutDashboard size={20} strokeWidth={isActive ? 2.5 : 2} />
+                              )}
+                              <span className="font-bold text-[15px] flex-1">{item.label}</span>
+                              <ChevronRight 
+                                size={16} 
+                                className={`transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} 
+                              />
+                            </div>
+                          </SidebarMenuButton>
+                          {isOpen && (
+                            <SidebarMenuSub className="mt-1 ml-6 border-l-2 border-slate-200 dark:border-slate-800 gap-1">
+                              {item.submenus?.map((sub) => (
+                                <SidebarMenuSubItem key={sub.label}>
+                                  <SidebarMenuSubButton 
+                                    asChild 
+                                    isActive={location.pathname === sub.link}
+                                    className={`
+                                      h-10 px-3 transition-all duration-200 rounded-md
+                                      ${location.pathname === sub.link 
+                                        ? "text-blue-600 dark:text-blue-400 font-bold !bg-transparent" 
+                                        : "text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                                      }
+                                    `}
+                                  >
+                                    <Link to={sub.link}>{sub.label}</Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
+                            </SidebarMenuSub>
+                          )}
+                        </SidebarMenuItem>
+                      );
+                    }
+
                     return (
                       <SidebarMenuItem key={item.label}>
                         <SidebarMenuButton 

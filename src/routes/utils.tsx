@@ -25,7 +25,8 @@ export type NavbarMenu = {
 export type NavbarSubmenu = {
   label: string;
   link: string;
-  icon?: LucideIcon | string; // Added icon support for submenus
+  icon?: LucideIcon | string;
+  submenus?: NavbarSubmenu[]; // Added support for nested submenus
 };
 
 export function generateRouterConfig(appRoutes: AppRoute[]): RouteObject[] {
@@ -73,11 +74,26 @@ export function generateNavbarMenu(
     if (route.children && route.children.length > 0) {
       menu.submenus = route.children
         .filter((child) => !child.hidden && child.label)
-        .map((child) => ({
-          label: child.label!,
-          link: createLink(route.path, child.path),
-          icon: child.icon,
-        }));
+        .map((child) => {
+          const submenu: NavbarSubmenu = {
+            label: child.label!,
+            link: createLink(route.path, child.path),
+            icon: child.icon,
+          };
+
+          // Recursively handle nested children for submenus
+          if (child.children && child.children.length > 0) {
+            submenu.submenus = child.children
+              .filter((gc) => !gc.hidden && gc.label)
+              .map((gc) => ({
+                label: gc.label!,
+                link: createLink(route.path, child.path, gc.path),
+                icon: gc.icon,
+              }));
+          }
+
+          return submenu;
+        });
       
       // If it has submenus, the main link might not be needed or could be the first child
       if (menu.submenus.length > 0) {

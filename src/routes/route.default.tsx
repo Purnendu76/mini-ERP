@@ -7,6 +7,7 @@ import type { AppRoute } from "./utils";
 const Login = lazy(() => import("@/pages/Default/Login"));
 const Register = lazy(() => import("@/pages/Default/Regester"));
 const NotFound = lazy(() => import("@/pages/Default/Notfoundpages"));
+const SettingPage = lazy(() => import("@/pages/Default/SettingPage"));
 
 export const defaultRoutes: AppRoute[] = [
   {
@@ -20,6 +21,14 @@ export const defaultRoutes: AppRoute[] = [
         <Login />
       </Suspense>
     ),
+  },
+  {
+    path:"/setting",
+    element:(
+      <Suspense fallback={<SuspenseLoader />}>
+        <SettingPage />
+      </Suspense>
+    )
   },
   {
     path: "/register",
