@@ -13,7 +13,7 @@ import {
   SidebarMenuSubItem,
   SidebarMenuSubButton,
 } from "@/components/ui/sidebar";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAppRoutes } from "@/context/RouteContext";
 import { generateNavbarMenu } from "@/routes/utils";
 import { LayoutDashboard, Settings, LogOut, ChevronRight } from "lucide-react";
@@ -22,10 +22,14 @@ import { useState } from "react";
 
 export function AppSidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const routes = useAppRoutes();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     "Users": true // Default open Users for now as per design
   });
+
+  // Derive role prefix from current URL
+  const rolePrefix = location.pathname.split("/")[1] || "admin";
 
   const toggleMenu = (label: string) => {
     setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }));
@@ -182,11 +186,21 @@ export function AppSidebar() {
                   <ThemeToggle />
                 </div>
               </div>
-              <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors group/item text-slate-700 dark:text-slate-300">
+              <button 
+                onClick={() => navigate(`/${rolePrefix}/settings`)}
+                className="w-full flex items-center gap-3 px-2 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors group/item text-slate-700 dark:text-slate-300"
+              >
                 <Settings size={16} className="text-slate-400 dark:text-slate-500 group-hover/item:text-slate-600 dark:group-hover/item:text-slate-300" />
                 <span className="font-medium">Settings</span>
               </button>
-              <button className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors group/item">
+              <button 
+                onClick={() => {
+                  localStorage.removeItem("erp_token");
+                  localStorage.removeItem("erp_user");
+                  navigate("/login");
+                }}
+                className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors group/item"
+              >
                 <LogOut size={16} className="text-red-400 group-hover/item:text-red-600" />
                 <span className="font-medium">Logout</span>
               </button>

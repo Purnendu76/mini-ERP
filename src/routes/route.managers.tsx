@@ -2,7 +2,14 @@ import { lazy, Suspense } from "react";
 import { SuspenseLoader } from "@/components/loaders/SuspenseLoader";
 import AppLayout from "@/Layout/AppLayout";
 import type { AppRoute } from "./utils";
-import { LayoutGrid, Package, CreditCard, Receipt, Users, UsersRound } from "lucide-react";
+import {
+  LayoutGrid,
+  Package,
+  CreditCard,
+  Receipt,
+  Users,
+  UsersRound,
+} from "lucide-react";
 
 // Lazy-loaded components
 const Managers = lazy(() => import("@/pages/Manager/Manages"));
@@ -12,6 +19,7 @@ const Expenses = lazy(() => import("@/pages/Admin/Expenses"));
 const Invoices = lazy(() => import("@/pages/Admin/Invoices"));
 const Products = lazy(() => import("@/pages/Admin/Products"));
 const UsersList = lazy(() => import("@/pages/Admin/Users"));
+const SettingPage = lazy(() => import("@/pages/Default/SettingPage"));
 
 export const managerRoutes: AppRoute = {
   label: "Managers",
@@ -85,6 +93,16 @@ export const managerRoutes: AppRoute = {
       element: (
         <Suspense fallback={<SuspenseLoader />}>
           <ManagerDetails />
+        </Suspense>
+      ),
+      hidden: true,
+    },
+    {
+      label: "Settings",
+      path: "settings",
+      element: (
+        <Suspense fallback={<SuspenseLoader />}>
+          <SettingPage />
         </Suspense>
       ),
       hidden: true,

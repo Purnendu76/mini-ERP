@@ -52,7 +52,7 @@ export function generateRouterConfig(appRoutes: AppRoute[]): RouteObject[] {
 export function generateNavbarMenu(
   appRoutes: AppRoute[],
   appUrl: string,
-  userRole?: UserRole
+  userRole?: UserRole,
 ): NavbarMenu[] {
   const navbarMenu: NavbarMenu[] = [];
 
@@ -94,7 +94,7 @@ export function generateNavbarMenu(
 
           return submenu;
         });
-      
+
       // If it has submenus, the main link might not be needed or could be the first child
       if (menu.submenus.length > 0) {
         delete menu.link;

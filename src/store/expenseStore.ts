@@ -30,7 +30,7 @@ export const useExpenseStore = create<ExpenseStore>()(
             entity: "EXPENSE",
             user: { name: "System Admin", email: "admin@invoice-system.local" },
             ipAddress: "127.0.0.1",
-            details: `Added Expense: ${expense.expenseType}`
+            details: `Added Expense: ${expense.expenseDate}`
           });
 
           return { expenses: [newExpense, ...state.expenses] };
@@ -45,7 +45,7 @@ export const useExpenseStore = create<ExpenseStore>()(
               entity: "EXPENSE",
               user: { name: "System Admin", email: "admin@invoice-system.local" },
               ipAddress: "127.0.0.1",
-              details: `Updated Expense: ${expense.expenseType}`
+              details: `Updated Expense: ${expense.expenseDate}`
             });
           }
           return {
@@ -69,7 +69,7 @@ export const useExpenseStore = create<ExpenseStore>()(
               entity: "EXPENSE",
               user: { name: "System Admin", email: "admin@invoice-system.local" },
               ipAddress: "127.0.0.1",
-              details: `Deleted Expense: ${expense.expenseType}`
+              details: `Deleted Expense: ${expense.expenseDate}`
             });
           }
           return {

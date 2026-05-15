@@ -1,11 +1,7 @@
 import { useState, useMemo } from "react";
-import { 
-  Search, 
-  Calendar as CalendarIcon, 
-  X, 
-  Eye, 
-  Filter, 
-  Trash2,
+import {
+  Search,
+  Calendar as CalendarIcon,
   RefreshCcw,
   RotateCcw
 } from "lucide-react";

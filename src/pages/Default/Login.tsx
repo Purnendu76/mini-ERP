@@ -90,7 +90,7 @@ export default function LoginPage() {
     const user = mockUsers.find(
       (item) =>
         item.email === values.email.trim().toLowerCase() &&
-        item.password === values.password
+        item.password === values.password,
     );
 
     if (!user) {
@@ -106,11 +106,11 @@ export default function LoginPage() {
         name: user.name,
         email: user.email,
         role: user.role,
-      })
+      }),
     );
 
     toast.success(`Welcome back, ${user.name}`);
-    
+
     // Role-based redirection
     const rolePath = user.role.toLowerCase();
     navigate(`/${rolePath}/dashboard`);

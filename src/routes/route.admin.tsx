@@ -3,7 +3,14 @@ import { Outlet } from "react-router-dom";
 import { SuspenseLoader } from "@/components/loaders/SuspenseLoader";
 import AppLayout from "@/Layout/AppLayout";
 import type { AppRoute } from "./utils";
-import { LayoutGrid, Package, CreditCard, Receipt, Users, ShieldCheck } from "lucide-react";
+import {
+  LayoutGrid,
+  Package,
+  CreditCard,
+  Receipt,
+  Users,
+  ShieldCheck,
+} from "lucide-react";
 
 // Lazy-loaded components
 const AdminDashboard = lazy(() => import("@/pages/Admin/AdminDashboard"));
@@ -12,10 +19,13 @@ const Expenses = lazy(() => import("@/pages/Admin/Expenses"));
 const Invoices = lazy(() => import("@/pages/Admin/Invoices"));
 const Products = lazy(() => import("@/pages/Admin/Products"));
 const AuditLog = lazy(() => import("@/pages/Admin/AuditLog"));
+const SettingPage = lazy(() => import("@/pages/Default/SettingPage"));
 
 // User management sub-pages
 const ManageAdmins = lazy(() => import("@/pages/Admin/users/Manage-Admins"));
-const ManageManagers = lazy(() => import("@/pages/Admin/users/Manage-Managers"));
+const ManageManagers = lazy(
+  () => import("@/pages/Admin/users/Manage-Managers"),
+);
 const ManageStaffs = lazy(() => import("@/pages/Admin/users/Manage-Staffs"));
 
 export const adminRoutes: AppRoute = {
@@ -115,6 +125,16 @@ export const adminRoutes: AppRoute = {
       element: (
         <Suspense fallback={<SuspenseLoader />}>
           <AdminDetails />
+        </Suspense>
+      ),
+      hidden: true,
+    },
+    {
+      label: "Settings",
+      path: "settings",
+      element: (
+        <Suspense fallback={<SuspenseLoader />}>
+          <SettingPage />
         </Suspense>
       ),
       hidden: true,
