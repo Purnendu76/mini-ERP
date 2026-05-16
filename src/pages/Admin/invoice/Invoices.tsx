@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import {  useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -88,7 +89,7 @@ import type {
   Invoice,
   InvoiceStatus,
   InvoiceItem,
-  InvoiceInput
+  
 } from "@/types/invoice.types";
 
 const invoiceStatuses: InvoiceStatus[] = [
@@ -140,6 +141,7 @@ const defaultFormValues: InvoiceFormValues = {
 
 
 export default function Invoices() {
+  const navigate = useNavigate();
   const { invoices, addInvoice, updateInvoice, deleteInvoice } = useInvoiceStore();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -704,11 +706,14 @@ export default function Invoices() {
                             <FileText className="h-5 w-5" />
                           </div>
 
-                          <div>
-                            <p className="font-medium">
+                          <div 
+                            className="cursor-pointer group/link"
+                            onClick={() => navigate(`/admin/invoices/${invoice.id}`)}
+                          >
+                            <p className="font-bold text-blue-600 dark:text-blue-400 group-hover/link:underline">
                               {invoice.invoiceNumber}
                             </p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-xs text-muted-foreground font-medium">
                               ID: {invoice.id.slice(0, 8)}
                             </p>
                           </div>
@@ -761,7 +766,14 @@ export default function Invoices() {
                               onClick={() => setPreviewInvoice(invoice)}
                             >
                               <Eye className="mr-2 h-4 w-4" />
-                              View
+                              Preview
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem
+                              onClick={() => navigate(`/admin/invoices/${invoice.id}`)}
+                            >
+                              <FileText className="mr-2 h-4 w-4" />
+                              Full Details
                             </DropdownMenuItem>
 
                             <DropdownMenuItem

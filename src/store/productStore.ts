@@ -12,11 +12,12 @@ type ProductStore = {
   addProduct: (product: ProductInput) => void;
   updateProduct: (id: string, product: ProductInput) => void;
   deleteProduct: (id: string) => void;
+  getProductById: (id: string) => Product | undefined;
 };
 
 export const useProductStore = create<ProductStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       products: [],
 
       addProduct: (product) =>
@@ -78,6 +79,10 @@ export const useProductStore = create<ProductStore>()(
             products: state.products.filter((product) => product.id !== id),
           };
         }),
+
+      getProductById: (id) => {
+        return get().products.find((product) => product.id === id);
+      },
     }),
     {
       name: "erp_products",

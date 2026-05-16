@@ -16,11 +16,14 @@ import {
 // Lazy-loaded components
 const AdminDashboard = lazy(() => import("@/pages/Admin/AdminDashboard"));
 const AdminDetails = lazy(() => import("@/pages/Admin/AdminDetails"));
-const Expenses = lazy(() => import("@/pages/Admin/Expenses"));
-const Invoices = lazy(() => import("@/pages/Admin/Invoices"));
-const Products = lazy(() => import("@/pages/Admin/Products"));
+const Expenses = lazy(() => import("@/pages/Admin/Expenses/Expenses"));
+const Invoices = lazy(() => import("@/pages/Admin/invoice/Invoices"));
+const Products = lazy(() => import("@/pages/Admin/Products/Products"));
 const AuditLog = lazy(() => import("@/pages/Admin/AuditLog"));
 const SettingPage = lazy(() => import("@/pages/Default/SettingPage"));
+const InvoiceDetails = lazy(() => import("@/pages/Admin/invoice/InvoiceDetails"));
+const ProductsDetails = lazy(() => import("@/pages/Admin/Products/ProductsDetails"));
+const ExpensesDetails = lazy(() => import("@/pages/Admin/Expenses/ExpensesDetails"));
 
 // User management sub-pages
 const ManageAdmins = lazy(() => import("@/pages/Admin/users/Manage-Admins"));
@@ -130,6 +133,36 @@ export const adminRoutes: AppRoute = {
       element: (
         <Suspense fallback={<SuspenseLoader />}>
           <AdminDetails />
+        </Suspense>
+      ),
+      hidden: true,
+    },
+    {
+      label: "Invoice Details",
+      path: "invoices/:id",
+      element: (
+        <Suspense fallback={<SuspenseLoader />}>
+          <InvoiceDetails />
+        </Suspense>
+      ),
+      hidden: true,
+    },
+    {
+      label: "Product Details",
+      path: "products/:id",
+      element: (
+        <Suspense fallback={<SuspenseLoader />}>
+          <ProductsDetails />
+        </Suspense>
+      ),
+      hidden: true,
+    },
+    {
+      label: "Expense Details",
+      path: "expenses/:id",
+      element: (
+        <Suspense fallback={<SuspenseLoader />}>
+          <ExpensesDetails />
         </Suspense>
       ),
       hidden: true,

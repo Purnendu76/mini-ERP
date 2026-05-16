@@ -10,11 +10,12 @@ type ExpenseStore = {
   addExpense: (expense: ExpenseInput) => void;
   updateExpense: (id: string, expense: ExpenseInput) => void;
   deleteExpense: (id: string) => void;
+  getExpenseById: (id: string) => Expense | undefined;
 };
 
 export const useExpenseStore = create<ExpenseStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       expenses: [],
 
       addExpense: (expense) =>
@@ -76,6 +77,10 @@ export const useExpenseStore = create<ExpenseStore>()(
             expenses: state.expenses.filter((expense) => expense.id !== id),
           };
         }),
+
+      getExpenseById: (id) => {
+        return get().expenses.find((expense) => expense.id === id);
+      },
     }),
     {
       name: "erp_expenses",

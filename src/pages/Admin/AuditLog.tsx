@@ -3,7 +3,12 @@ import {
   Search,
   Calendar as CalendarIcon,
   RefreshCcw,
-  RotateCcw
+  RotateCcw,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from "lucide-react";
 import { format, isWithinInterval, startOfDay, endOfDay, parseISO } from "date-fns";
 import type { DateRange } from "react-day-picker";
@@ -41,6 +46,8 @@ export default function AuditLog() {
   const [entityFilter, setEntityFilter] = useState<string>("all");
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   const filteredLogs = useMemo(() => {
     return logs.filter(log => {
@@ -59,6 +66,17 @@ export default function AuditLog() {
     });
   }, [logs, entityFilter, actionFilter, dateRange]);
 
+  // Reset to first page when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [entityFilter, actionFilter, dateRange]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / ITEMS_PER_PAGE));
+  const paginatedLogs = filteredLogs.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   const uniqueEntities = useMemo(() => Array.from(new Set(logs.map(l => l.entity))), [logs]);
   const uniqueActions = useMemo(() => Array.from(new Set(logs.map(l => l.action))), [logs]);
 
@@ -66,6 +84,7 @@ export default function AuditLog() {
     setEntityFilter("all");
     setActionFilter("all");
     setDateRange(undefined);
+    setCurrentPage(1);
   };
 
   const handleClearLogs = () => {
@@ -196,7 +215,7 @@ export default function AuditLog() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredLogs.map((log) => (
+              paginatedLogs.map((log) => (
                 <TableRow key={log.id} className="border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
                   <TableCell className="text-sm font-medium text-slate-500 tabular-nums">
                     {log.timestamp}
@@ -239,6 +258,60 @@ export default function AuditLog() {
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination Controls */}
+      {filteredLogs.length > 0 && (
+        <div className="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 pt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing <span className="font-medium">{((currentPage - 1) * ITEMS_PER_PAGE) + 1}</span> to <span className="font-medium">{Math.min(currentPage * ITEMS_PER_PAGE, filteredLogs.length)}</span> of <span className="font-medium">{filteredLogs.length}</span> results
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-lg"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+            >
+              <span className="sr-only">Go to first page</span>
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-lg"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              <span className="sr-only">Go to previous page</span>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <div className="text-sm font-medium px-2">
+              Page {currentPage} of {totalPages}
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-lg"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              <span className="sr-only">Go to next page</span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 rounded-lg"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+            >
+              <span className="sr-only">Go to last page</span>
+              <ChevronsRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

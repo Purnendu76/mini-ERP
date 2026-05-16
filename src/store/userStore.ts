@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { RegisteredUser, UserRole, UserStatus } from "@/types/auth.types";
+import type { RegisteredUser } from "@/types/auth.types";
 import { useAuditStore } from "./auditStore";
 import { getRegisteredUsers, saveRegisteredUsers } from "@/lib/registeredUsers";
 import bcrypt from "bcryptjs";
@@ -12,7 +12,7 @@ interface UserState {
   syncWithAuth: () => void;
 }
 
-export const useUserStore = create<UserState>((set, get) => ({
+export const useUserStore = create<UserState>((set) => ({
   users: getRegisteredUsers(),
   
   syncWithAuth: () => {

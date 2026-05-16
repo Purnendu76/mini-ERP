@@ -19,8 +19,11 @@ import { generateNavbarMenu } from "@/routes/utils";
 import { LayoutDashboard, Settings, LogOut, ChevronRight } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { useState } from "react";
+import { useAuthStore } from "@/store/authStore";
 
 export function AppSidebar() {
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const location = useLocation();
   const navigate = useNavigate();
   const routes = useAppRoutes();
@@ -195,8 +198,7 @@ export function AppSidebar() {
               </button>
               <button 
                 onClick={() => {
-                  localStorage.removeItem("erp_token");
-                  localStorage.removeItem("erp_user");
+                  logout();
                   navigate("/login");
                 }}
                 className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors group/item"
@@ -212,18 +214,18 @@ export function AppSidebar() {
             <div className="relative">
               <div className="size-10 rounded-full overflow-hidden border-2 border-background shadow-sm ring-1 ring-border">
                 <img 
-                  src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop" 
-                  alt="System Admin" 
+                  src={user?.photo || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop"} 
+                  alt={user?.name || "User"} 
                   className="size-full object-cover" 
                 />
               </div>
               <div className="absolute bottom-0 right-0 size-2.5 bg-green-500 rounded-full border-2 border-background"></div>
             </div>
             <div className="flex flex-col overflow-hidden">
-              <span className="text-sm font-bold leading-tight truncate text-slate-900 dark:text-slate-100">System Admin</span>
+              <span className="text-sm font-bold leading-tight truncate text-slate-900 dark:text-slate-100">{user?.name || "System User"}</span>
               <div className="flex gap-1 mt-1">
-                <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 uppercase tracking-tighter">Admin</span>
-                <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 uppercase tracking-tighter">All Projects</span>
+                <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 uppercase tracking-tighter">{user?.role || "User"}</span>
+                <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 uppercase tracking-tighter">Verified</span>
               </div>
             </div>
           </div>

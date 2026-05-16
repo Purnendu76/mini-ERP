@@ -6,8 +6,10 @@ import { Settings, DownloadCloud, LayoutGrid } from "lucide-react";
 import { Suspense, useState, useEffect } from "react";
 import { SuspenseLoader } from "@/components/loaders/SuspenseLoader";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useAuthStore } from "@/store/authStore";
 
 export default function AppLayout() {
+  const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const location = useLocation();
   const routes = useAppRoutes();
@@ -76,8 +78,8 @@ export default function AppLayout() {
             </button>
             <div className="size-9 rounded-full overflow-hidden border-2 border-white dark:border-slate-800 shadow-md ring-1 ring-slate-200 dark:ring-slate-700 cursor-pointer hover:ring-blue-400 transition-all">
               <img
-                src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop"
-                alt="User"
+                src={user?.photo || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop"}
+                alt={user?.name || "User"}
                 className="size-full object-cover"
               />
             </div>

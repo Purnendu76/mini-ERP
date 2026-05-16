@@ -16,9 +16,9 @@ import {
 const Staff = lazy(() => import("@/pages/Staff/staff"));
 const StaffDetails = lazy(() => import("@/pages/Staff/staffDetails"));
 const AdminDashboard = lazy(() => import("@/pages/Admin/AdminDashboard"));
-const Expenses = lazy(() => import("@/pages/Admin/Expenses"));
-const Invoices = lazy(() => import("@/pages/Admin/Invoices"));
-const Products = lazy(() => import("@/pages/Admin/Products"));
+const Expenses = lazy(() => import("@/pages/Admin/Expenses/Expenses"));
+const Invoices = lazy(() => import("@/pages/Admin/invoice/Invoices"));
+const Products = lazy(() => import("@/pages/Admin/Products/Products"));
 const UsersList = lazy(() => import("@/pages/Admin/Users"));
 const SettingPage = lazy(() => import("@/pages/Default/SettingPage"));
 
@@ -32,7 +32,6 @@ export const staffRoutes: AppRoute = {
     </RoleRoute>
   ),
   children: [
-
     {
       label: "Dashboard",
       path: "dashboard",

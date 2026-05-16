@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -147,6 +148,7 @@ const defaultFormValues: ExpenseFormValues = {
 };
 
 export default function Expenses() {
+  const navigate = useNavigate();
   const { expenses, addExpense, updateExpense, deleteExpense } =
     useExpenseStore();
   const [search, setSearch] = useState("");
@@ -689,9 +691,14 @@ export default function Expenses() {
                             <ReceiptText className="h-5 w-5" />
                           </div>
 
-                          <div>
-                            <p className="font-medium">{expense.title}</p>
-                            <p className="text-xs text-muted-foreground">
+                          <div 
+                            className="cursor-pointer group/link"
+                            onClick={() => navigate(`/admin/expenses/${expense.id}`)}
+                          >
+                            <p className="font-bold text-blue-600 dark:text-blue-400 group-hover/link:underline">
+                              {expense.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground font-medium">
                               ID: {expense.id.slice(0, 8)}
                             </p>
                           </div>
@@ -743,6 +750,13 @@ export default function Expenses() {
                           </DropdownMenuTrigger>
 
                           <DropdownMenuContent align="end" className="w-36">
+                            <DropdownMenuItem
+                              onClick={() => navigate(`/admin/expenses/${expense.id}`)}
+                            >
+                              <ReceiptText className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+
                             <DropdownMenuItem
                               onClick={() => openEditExpenseForm(expense)}
                             >

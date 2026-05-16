@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { 
   Search, 
   Plus, 
@@ -12,7 +12,9 @@ import {
   CheckCircle2,
   XCircle,
   Calendar as CalendarIcon,
-  Loader2
+  Loader2,
+  Upload,
+  ImagePlus
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { format, isWithinInterval, startOfDay, endOfDay, parseISO } from "date-fns";
@@ -89,6 +91,19 @@ export default function UserManagementTable({ role, title }: UserManagementTable
   useEffect(() => {
     syncWithAuth();
   }, [role, syncWithAuth]);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, photo: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // Form states
   const [formData, setFormData] = useState({
@@ -424,13 +439,42 @@ export default function UserManagementTable({ role, title }: UserManagementTable
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Photo URL (Optional)</Label>
-              <Input
-                value={formData.photo}
-                onChange={(e) => setFormData({ ...formData, photo: e.target.value })}
-                placeholder="https://images.unsplash.com/..."
-                className="rounded-xl h-11"
-              />
+              <Label>Profile Photo (Optional)</Label>
+              <div 
+                className="rounded-2xl border border-dashed border-border bg-muted/50 p-5 cursor-pointer hover:bg-muted/80 transition-colors relative overflow-hidden"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleImageUpload} 
+                  accept="image/*" 
+                  className="hidden" 
+                />
+                {formData.photo ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="h-24 w-24 rounded-full overflow-hidden border shadow-sm">
+                      <img src={formData.photo} alt="Preview" className="h-full w-full object-cover" />
+                    </div>
+                    <p className="text-xs text-blue-600 font-medium">Click to change photo</p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-sm">
+                      <ImagePlus className="h-5 w-5" />
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        Upload Photo
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Click to select an image from your device.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Account Status</Label>

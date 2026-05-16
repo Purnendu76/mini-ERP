@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -91,6 +92,7 @@ const productSchema = z.object({
   status: z.enum(["In Stock", "Low Stock", "Out of Stock"], {
     message: "Status is required",
   }),
+  image: z.string().optional(),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -112,9 +114,11 @@ const defaultFormValues: ProductFormValues = {
   price: 0,
   stock: 0,
   status: "In Stock",
+  image: "",
 };
 
 export default function Products() {
+  const navigate = useNavigate();
   const { products, addProduct, updateProduct, deleteProduct } =
     useProductStore();
   const [search, setSearch] = useState("");
@@ -138,11 +142,27 @@ export default function Products() {
     control,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: defaultFormValues,
   });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const watchedImage = watch("image");
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setValue("image", reader.result as string, { shouldDirty: true });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const filteredProducts = useMemo(() => {
     let data = [...products];
@@ -229,6 +249,7 @@ export default function Products() {
       price: product.price,
       stock: product.stock,
       status: product.status,
+      image: product.image || "",
     });
     setIsFormOpen(true);
   };
@@ -606,12 +627,15 @@ export default function Products() {
                             )}
                           </div>
 
-                          <div>
-                            <p className="font-medium text-foreground">
+                          <div 
+                            className="cursor-pointer group/link"
+                            onClick={() => navigate(`/admin/products/${product.id}`)}
+                          >
+                            <p className="font-bold text-blue-600 dark:text-blue-400 group-hover/link:underline">
                               {product.name}
                             </p>
-                            <p className="text-xs text-muted-foreground">
-                              ID: {product.id}
+                            <p className="text-xs text-muted-foreground font-medium">
+                              ID: {product.id.slice(0, 8)}
                             </p>
                           </div>
                         </div>
@@ -648,6 +672,13 @@ export default function Products() {
                           </DropdownMenuTrigger>
 
                           <DropdownMenuContent align="end" className="w-36">
+                             <DropdownMenuItem
+                              onClick={() => navigate(`/admin/products/${product.id}`)}
+                            >
+                              <Boxes className="mr-2 h-4 w-4" />
+                              Full Details
+                            </DropdownMenuItem>
+
                             <DropdownMenuItem
                               onClick={() => openEditProductForm(product)}
                             >
@@ -825,22 +856,40 @@ export default function Products() {
               </FormField>
             </div>
 
-            <div className="rounded-2xl border border-dashed border-border bg-muted/50 p-5">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-card text-muted-foreground">
-                  <ImageIcon className="h-5 w-5" />
+            <div 
+              className="rounded-2xl border border-dashed border-border bg-muted/50 p-5 cursor-pointer hover:bg-muted/80 transition-colors relative overflow-hidden"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleImageUpload} 
+                accept="image/*" 
+                className="hidden" 
+              />
+              {watchedImage ? (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-32 w-32 rounded-xl overflow-hidden border">
+                    <img src={watchedImage} alt="Preview" className="h-full w-full object-cover" />
+                  </div>
+                  <p className="text-xs text-blue-600 font-medium">Click to change image</p>
                 </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-sm">
+                    <Upload className="h-5 w-5" />
+                  </div>
 
-                <div>
-                  <p className="text-sm font-medium text-foreground">
-                    Product Image
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Image upload UI placeholder only. You can connect upload
-                    logic later.
-                  </p>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Upload Product Image
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Click here to select a file from your computer (JPG, PNG).
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

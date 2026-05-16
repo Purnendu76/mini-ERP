@@ -21,7 +21,28 @@ export function getRegisteredUsers(): RegisteredUser[] {
   }
 
   try {
-    return JSON.parse(users) as RegisteredUser[];
+    const parsedUsers = JSON.parse(users) as RegisteredUser[];
+    let needsUpdate = false;
+
+    // Migrate any plain-text passwords to bcrypt hashes
+    const migratedUsers = parsedUsers.map(user => {
+      // bcrypt hashes start with $2a$, $2b$, or $2y$
+      const isHashed = user.password && user.password.startsWith("$2");
+      if (!isHashed) {
+        needsUpdate = true;
+        return {
+          ...user,
+          password: bcrypt.hashSync(user.password, 10)
+        };
+      }
+      return user;
+    });
+
+    if (needsUpdate) {
+      saveRegisteredUsers(migratedUsers);
+    }
+
+    return migratedUsers;
   } catch {
     return [];
   }
