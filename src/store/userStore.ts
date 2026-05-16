@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { RegisteredUser, UserRole, UserStatus } from "@/types/auth.types";
 import { useAuditStore } from "./auditStore";
 import { getRegisteredUsers, saveRegisteredUsers } from "@/lib/registeredUsers";
+import bcrypt from "bcryptjs";
 
 interface UserState {
   users: RegisteredUser[];
@@ -23,12 +24,15 @@ export const useUserStore = create<UserState>((set, get) => ({
     const name = userData.name.trim();
     const password = userData.password.trim();
 
+    // Hash the password
+    const hashedPassword = bcrypt.hashSync(password, 10);
+
     const newUser: RegisteredUser = {
       ...userData,
       id: crypto.randomUUID(),
       name,
       email,
-      password,
+      password: hashedPassword,
       createdAt: new Date().toISOString(),
       status: userData.status || "Active",
     } as RegisteredUser;
@@ -61,8 +65,10 @@ export const useUserStore = create<UserState>((set, get) => ({
     const cleanData = { ...userData };
     if (cleanData.email) cleanData.email = cleanData.email.trim().toLowerCase();
     if (cleanData.name) cleanData.name = cleanData.name.trim();
+    
     if (cleanData.password) {
-      cleanData.password = cleanData.password.trim();
+      // Hash the new password if provided
+      cleanData.password = bcrypt.hashSync(cleanData.password.trim(), 10);
     } else {
       delete cleanData.password;
     }

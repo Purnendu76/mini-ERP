@@ -7,6 +7,7 @@ import {
   getAuthUser,
   setAuthCookies,
 } from "@/lib/authCookies";
+import bcrypt from "bcryptjs";
 
 type AuthStore = {
   user: AuthUser | null;
@@ -42,12 +43,17 @@ export const useAuthStore = create<AuthStore>((set) => ({
     const email = credentials.email.trim().toLowerCase();
     
     const matchedUser = registeredUsers.find(
-      (user) =>
-        user.email.trim().toLowerCase() === email &&
-        user.password.trim() === credentials.password.trim()
+      (user) => user.email.trim().toLowerCase() === email
     );
 
     if (!matchedUser) {
+      return false;
+    }
+
+    // Verify hashed password
+    const isPasswordValid = bcrypt.compareSync(credentials.password.trim(), matchedUser.password);
+
+    if (!isPasswordValid) {
       return false;
     }
 

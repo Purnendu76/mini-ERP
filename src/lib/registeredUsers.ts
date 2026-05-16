@@ -1,4 +1,5 @@
 import type { RegisteredUser } from "@/types/auth.types";
+import bcrypt from "bcryptjs";
 
 const USERS_KEY = "erp_registered_users";
 
@@ -10,7 +11,7 @@ export function getRegisteredUsers(): RegisteredUser[] {
       id: "admin-1",
       name: "Admin User",
       email: "admin@example.com",
-      password: "admin123",
+      password: bcrypt.hashSync("admin123", 10),
       role: "Admin",
       status: "Active",
       createdAt: new Date().toISOString(),
