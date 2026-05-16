@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react";
 import { Outlet } from "react-router-dom";
 import { SuspenseLoader } from "@/components/loaders/SuspenseLoader";
 import AppLayout from "@/Layout/AppLayout";
+import RoleRoute from "@/components/auth/RoleRoute";
 import type { AppRoute } from "./utils";
 import {
   LayoutGrid,
@@ -32,7 +33,11 @@ export const adminRoutes: AppRoute = {
   label: "Admin",
   path: "admin",
   icon: ShieldCheck,
-  element: <AppLayout />,
+  element: (
+    <RoleRoute allowedRoles={["Admin"]}>
+      <AppLayout />
+    </RoleRoute>
+  ),
   children: [
     {
       label: "Dashboard",

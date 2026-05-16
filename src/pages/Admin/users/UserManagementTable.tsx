@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
   Search, 
   Plus, 
@@ -19,7 +19,7 @@ import { format, isWithinInterval, startOfDay, endOfDay, parseISO } from "date-f
 import type { DateRange } from "react-day-picker";
 import { toast } from "sonner";
 import { useUserStore } from "@/store/userStore";
-import type { User, UserRole, UserStatus } from "@/types/user.types";
+import type { RegisteredUser as User, UserRole, UserStatus } from "@/types/auth.types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -70,7 +70,12 @@ interface UserManagementTableProps {
 }
 
 export default function UserManagementTable({ role, title }: UserManagementTableProps) {
-  const { users, addUser, updateUser, deleteUser } = useUserStore();
+  const users = useUserStore((state) => state.users);
+  const addUser = useUserStore((state) => state.addUser);
+  const updateUser = useUserStore((state) => state.updateUser);
+  const deleteUser = useUserStore((state) => state.deleteUser);
+  const syncWithAuth = useUserStore((state) => state.syncWithAuth);
+
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -80,19 +85,26 @@ export default function UserManagementTable({ role, title }: UserManagementTable
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
+  // Sync users whenever the role or component mounts
+  useEffect(() => {
+    syncWithAuth();
+  }, [role, syncWithAuth]);
+
   // Form states
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    status: "active" as UserStatus,
+    password: "",
+    role: role as UserRole,
+    status: "Active" as UserStatus,
     photo: "",
   });
 
   const filteredUsers = useMemo(() => {
     return users.filter(user => {
-      const matchRole = user.role === role;
-      const matchSearch = user.name.toLowerCase().includes(search.toLowerCase()) || 
-                          user.email.toLowerCase().includes(search.toLowerCase());
+      const matchRole = user.role.toLowerCase() === role.toLowerCase();
+      const matchSearch = user.name.toLowerCase().includes(search.trim().toLowerCase()) || 
+                          user.email.toLowerCase().includes(search.trim().toLowerCase());
       
       let matchDate = true;
       if (dateRange?.from) {
@@ -142,7 +154,9 @@ export default function UserManagementTable({ role, title }: UserManagementTable
       setFormData({
         name: user.name,
         email: user.email,
-        status: user.status,
+        password: "", // Don't show password on edit for security
+        role: user.role,
+        status: user.status as any,
         photo: user.photo || "",
       });
     } else {
@@ -150,7 +164,9 @@ export default function UserManagementTable({ role, title }: UserManagementTable
       setFormData({
         name: "",
         email: "",
-        status: "active",
+        password: "",
+        role: role,
+        status: "Active",
         photo: "",
       });
     }
@@ -171,17 +187,33 @@ export default function UserManagementTable({ role, title }: UserManagementTable
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
-    if (editingUser) {
-      updateUser(editingUser.id, formData);
-      toast.success("User updated successfully");
-    } else {
-      addUser({ ...formData, role });
-      toast.success("User added successfully");
+      if (editingUser) {
+        updateUser(editingUser.id, formData);
+        toast.success("User updated successfully");
+      } else {
+        if (!formData.password) {
+          toast.error("Password is required for new users");
+          setIsSubmitting(false);
+          return;
+        }
+        addUser({ ...formData });
+        
+        if (formData.role !== role) {
+          toast.success(`User added successfully to ${formData.role} category`);
+        } else {
+          toast.success("User added successfully");
+        }
+      }
+      setIsFormOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Something went wrong");
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
-    setIsFormOpen(false);
   };
 
   return (
@@ -297,7 +329,7 @@ export default function UserManagementTable({ role, title }: UserManagementTable
                       variant="secondary"
                       className={`
                         capitalize rounded-full px-3 py-0.5 font-medium
-                        ${user.status === "active" 
+                        ${user.status.toLowerCase() === "active" 
                           ? "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800" 
                           : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
                         }
@@ -365,6 +397,33 @@ export default function UserManagementTable({ role, title }: UserManagementTable
               />
             </div>
             <div className="space-y-2">
+              <Label>Password</Label>
+              <Input
+                required={!editingUser}
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                placeholder={editingUser ? "Leave blank to keep current password" : "Set account password"}
+                className="rounded-xl h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>User Role</Label>
+              <Select
+                value={formData.role}
+                onValueChange={(val: UserRole) => setFormData({ ...formData, role: val })}
+              >
+                <SelectTrigger className="rounded-xl h-11">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="Admin">Admin</SelectItem>
+                  <SelectItem value="Manager">Manager</SelectItem>
+                  <SelectItem value="Staff">Staff</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
               <Label>Photo URL (Optional)</Label>
               <Input
                 value={formData.photo}
@@ -383,8 +442,8 @@ export default function UserManagementTable({ role, title }: UserManagementTable
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
+                  <SelectItem value="Inactive">Inactive</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -28,6 +28,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { useAuthStore } from "@/store/authStore";
+
 const loginSchema = z.object({
   email: z
     .string()
@@ -39,33 +41,10 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-const mockUsers = [
-  {
-    id: "1",
-    name: "Admin User",
-    email: "admin@example.com",
-    password: "admin123",
-    role: "Admin",
-  },
-  {
-    id: "2",
-    name: "Manager User",
-    email: "manager@example.com",
-    password: "manager123",
-    role: "Manager",
-  },
-  {
-    id: "3",
-    name: "Staff User",
-    email: "staff@example.com",
-    password: "staff123",
-    role: "Staff",
-  },
-];
-
 export default function LoginPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const login = useAuthStore((state) => state.login);
 
   const {
     register,
@@ -85,35 +64,29 @@ export default function LoginPage() {
   const remember = watch("remember");
 
   const onSubmit = async (values: LoginFormValues) => {
-    await new Promise((resolve) => setTimeout(resolve, 700));
+    try {
+      const success = await login({
+        email: values.email,
+        password: values.password,
+      });
 
-    const user = mockUsers.find(
-      (item) =>
-        item.email === values.email.trim().toLowerCase() &&
-        item.password === values.password,
-    );
+      if (!success) {
+        toast.error("Invalid email or password");
+        return;
+      }
 
-    if (!user) {
-      toast.error("Invalid email or password");
-      return;
+      toast.success("Login successful");
+
+      const user = useAuthStore.getState().user;
+      if (user) {
+        const rolePath = user.role.toLowerCase();
+        navigate(`/${rolePath}/dashboard`);
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Something went wrong");
     }
-
-    localStorage.setItem("erp_token", "mock-auth-token");
-    localStorage.setItem(
-      "erp_user",
-      JSON.stringify({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      }),
-    );
-
-    toast.success(`Welcome back, ${user.name}`);
-
-    // Role-based redirection
-    const rolePath = user.role.toLowerCase();
-    navigate(`/${rolePath}/dashboard`);
   };
 
   return (

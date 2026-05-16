@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { SuspenseLoader } from "@/components/loaders/SuspenseLoader";
 import AppLayout from "@/Layout/AppLayout";
+import RoleRoute from "@/components/auth/RoleRoute";
 import type { AppRoute } from "./utils";
 import {
   LayoutGrid,
@@ -25,18 +26,13 @@ export const managerRoutes: AppRoute = {
   label: "Managers",
   path: "manager",
   icon: UsersRound,
-  element: <AppLayout />,
+  element: (
+    <RoleRoute allowedRoles={["Admin", "Manager"]}>
+      <AppLayout />
+    </RoleRoute>
+  ),
   children: [
-    {
-      label: "Managers List",
-      path: "managers",
-      icon: UsersRound,
-      element: (
-        <Suspense fallback={<SuspenseLoader />}>
-          <Managers />
-        </Suspense>
-      ),
-    },
+
     {
       label: "Dashboard",
       path: "dashboard",
@@ -77,16 +73,7 @@ export const managerRoutes: AppRoute = {
         </Suspense>
       ),
     },
-    {
-      label: "Users",
-      path: "users",
-      icon: Users,
-      element: (
-        <Suspense fallback={<SuspenseLoader />}>
-          <UsersList />
-        </Suspense>
-      ),
-    },
+
     {
       label: "Manager Details",
       path: "details/:id",

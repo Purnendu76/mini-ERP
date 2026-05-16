@@ -5,7 +5,6 @@ import type { AppRoute } from "./utils";
 
 // Lazy-loaded components
 const Login = lazy(() => import("@/pages/Default/Login"));
-const Register = lazy(() => import("@/pages/Default/Regester"));
 const NotFound = lazy(() => import("@/pages/Default/Notfoundpages"));
 export const defaultRoutes: AppRoute[] = [
   {
@@ -17,14 +16,6 @@ export const defaultRoutes: AppRoute[] = [
     element: (
       <Suspense fallback={<SuspenseLoader />}>
         <Login />
-      </Suspense>
-    ),
-  },
-  {
-    path: "/register",
-    element: (
-      <Suspense fallback={<SuspenseLoader />}>
-        <Register />
       </Suspense>
     ),
   },
