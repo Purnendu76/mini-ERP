@@ -167,11 +167,13 @@ export default function Invoices() {
     handleSubmit,
     reset,
     watch,
-    formState: { errors, isSubmitting },
-  } = useForm<InvoiceFormValues>({
+    formState,
+  } = useForm<any>({
     resolver: zodResolver(invoiceSchema),
     defaultValues: defaultFormValues,
   });
+  const errors = formState.errors as any;
+  const { isSubmitting } = formState;
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -182,7 +184,7 @@ export default function Invoices() {
   const watchedTaxRate = Number(watch("taxRate") || 0);
 
   const formSubtotal = useMemo(() => {
-    return watchedItems.reduce((sum, item) => {
+    return watchedItems.reduce((sum: number, item: any) => {
       const quantity = Number(item.quantity || 0);
       const price = Number(item.price || 0);
 
@@ -645,7 +647,6 @@ export default function Invoices() {
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 rounded-xl" align="start">
                   <Calendar
-                    initialFocus
                     mode="range"
                     defaultMonth={dateRange?.from}
                     selected={dateRange}
@@ -962,7 +963,6 @@ export default function Invoices() {
                           onSelect={(date) =>
                             field.onChange(date?.toISOString())
                           }
-                          initialFocus
                         />
                       </PopoverContent>
                     </Popover>
@@ -999,7 +999,6 @@ export default function Invoices() {
                           onSelect={(date) =>
                             field.onChange(date?.toISOString())
                           }
-                          initialFocus
                         />
                       </PopoverContent>
                     </Popover>

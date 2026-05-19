@@ -272,7 +272,6 @@ export default function UserManagementTable({ role, title }: UserManagementTable
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0 rounded-xl" align="start">
               <Calendar
-                initialFocus
                 mode="range"
                 defaultMonth={dateRange?.from}
                 selected={dateRange}

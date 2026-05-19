@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -160,6 +161,7 @@ export default function Expenses() {
   const [page, setPage] = useState(1);
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [localSubmitting, setLocalSubmitting] = useState(false);
@@ -177,11 +179,13 @@ export default function Expenses() {
     control,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
-  } = useForm<ExpenseFormValues>({
+    formState,
+  } = useForm<any>({
     resolver: zodResolver(expenseSchema),
     defaultValues: defaultFormValues,
   });
+  const errors = formState.errors as any;
+  const { isSubmitting } = formState;
 
   const filteredExpenses = useMemo(() => {
     let data = [...expenses];
@@ -521,146 +525,168 @@ export default function Expenses() {
                 </p>
               </div>
 
-              <Button
-                type="button"
-                variant="outline"
-                onClick={clearFilters}
-                className="h-10 rounded-xl"
-              >
-                <SlidersHorizontal className="mr-2 h-4 w-4" />
-                Clear Filters
-              </Button>
-            </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant={showFilters ? "default" : "outline"}
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="h-10 rounded-xl"
+                >
+                  <SlidersHorizontal className="mr-2 h-4 w-4" />
+                  {showFilters ? "Hide Filters" : "Show Filters"}
+                </Button>
 
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.3fr_0.8fr_0.8fr_0.8fr_0.8fr]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={search}
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setPage(1);
-                  }}
-                  placeholder="Search by title, category, submitted by..."
-                  className="h-10 rounded-xl pl-9"
-                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={clearFilters}
+                  className="h-10 rounded-xl"
+                >
+                  Clear Filters
+                </Button>
               </div>
-
-              <Select
-                value={categoryFilter}
-                onValueChange={(value) => {
-                  setCategoryFilter(value);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="h-10 rounded-xl">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {expenseCategories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={statusFilter}
-                onValueChange={(value) => {
-                  setStatusFilter(value);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="h-10 rounded-xl">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  {expenseStatuses.map((status) => (
-                    <SelectItem key={status} value={status}>
-                      {status}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={paymentMethodFilter}
-                onValueChange={(value) => {
-                  setPaymentMethodFilter(value);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="h-10 rounded-xl">
-                  <SelectValue placeholder="Payment Method" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Methods</SelectItem>
-                  {paymentMethods.map((method) => (
-                    <SelectItem key={method} value={method}>
-                      {method}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "h-10 justify-start text-left font-normal rounded-xl border-border bg-card",
-                      !dateRange && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateRange?.from ? (
-                      dateRange.to ? (
-                        <>
-                          {format(dateRange.from, "LLL dd, y")} -{" "}
-                          {format(dateRange.to, "LLL dd, y")}
-                        </>
-                      ) : (
-                        format(dateRange.from, "LLL dd, y")
-                      )
-                    ) : (
-                      <span>Pick a date range</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 rounded-xl" align="start">
-                  <Calendar
-                    initialFocus
-                    mode="range"
-                    defaultMonth={dateRange?.from}
-                    selected={dateRange}
-                    onSelect={setDateRange}
-                  />
-                </PopoverContent>
-              </Popover>
-
-              <Select
-                value={sortBy}
-                onValueChange={(value) => {
-                  setSortBy(value);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="h-10 rounded-xl">
-                  <SelectValue placeholder="Sort By" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">Newest First</SelectItem>
-                  <SelectItem value="oldest">Oldest First</SelectItem>
-                  <SelectItem value="amount-asc">Amount: Low to High</SelectItem>
-                  <SelectItem value="amount-desc">Amount: High to Low</SelectItem>
-                  <SelectItem value="date-asc">Date: Old to New</SelectItem>
-                  <SelectItem value="date-desc">Date: New to Old</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
+
+            <AnimatePresence>
+              {showFilters && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                  className="overflow-hidden"
+                >
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[1.3fr_0.8fr_0.8fr_0.8fr_0.8fr_0.8fr] pt-2">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        value={search}
+                        onChange={(event) => {
+                          setSearch(event.target.value);
+                          setPage(1);
+                        }}
+                        placeholder="Search by title, category, submitted by..."
+                        className="h-10 rounded-xl pl-9"
+                      />
+                    </div>
+
+                    <Select
+                      value={categoryFilter}
+                      onValueChange={(value) => {
+                        setCategoryFilter(value);
+                        setPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="h-10 rounded-xl">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Categories</SelectItem>
+                        {expenseCategories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={statusFilter}
+                      onValueChange={(value) => {
+                        setStatusFilter(value);
+                        setPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="h-10 rounded-xl">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        {expenseStatuses.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {status}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={paymentMethodFilter}
+                      onValueChange={(value) => {
+                        setPaymentMethodFilter(value);
+                        setPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="h-10 rounded-xl">
+                        <SelectValue placeholder="Payment Method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Methods</SelectItem>
+                        {paymentMethods.map((method) => (
+                          <SelectItem key={method} value={method}>
+                            {method}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "h-10 justify-start text-left font-normal rounded-xl border-border bg-card",
+                            !dateRange && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {dateRange?.from ? (
+                            dateRange.to ? (
+                              <>
+                                {format(dateRange.from, "LLL dd, y")} -{" "}
+                                {format(dateRange.to, "LLL dd, y")}
+                              </>
+                            ) : (
+                              format(dateRange.from, "LLL dd, y")
+                            )
+                          ) : (
+                            <span>Pick a date range</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 rounded-xl" align="start">
+                        <Calendar
+                          mode="range"
+                          defaultMonth={dateRange?.from}
+                          selected={dateRange}
+                          onSelect={setDateRange}
+                        />
+                      </PopoverContent>
+                    </Popover>
+
+                    <Select
+                      value={sortBy}
+                      onValueChange={(value) => {
+                        setSortBy(value);
+                        setPage(1);
+                      }}
+                    >
+                      <SelectTrigger className="h-10 rounded-xl">
+                        <SelectValue placeholder="Sort By" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="newest">Newest First</SelectItem>
+                        <SelectItem value="oldest">Oldest First</SelectItem>
+                        <SelectItem value="amount-asc">Amount: Low to High</SelectItem>
+                        <SelectItem value="amount-desc">Amount: High to Low</SelectItem>
+                        <SelectItem value="date-asc">Date: Old to New</SelectItem>
+                        <SelectItem value="date-desc">Date: New to Old</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </CardHeader>
 
           <CardContent>
@@ -959,7 +985,6 @@ export default function Expenses() {
                             mode="single"
                             selected={field.value ? new Date(field.value) : undefined}
                             onSelect={(date) => field.onChange(date?.toISOString())}
-                            initialFocus
                             className="rounded-2xl"
                           />
                         </PopoverContent>

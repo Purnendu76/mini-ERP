@@ -12,11 +12,12 @@ import {
   SidebarMenuSub,
   SidebarMenuSubItem,
   SidebarMenuSubButton,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAppRoutes } from "@/context/RouteContext";
 import { generateNavbarMenu } from "@/routes/utils";
-import { LayoutDashboard, Settings, LogOut, ChevronRight } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, ChevronRight, X } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { useState } from "react";
 import { useAuthStore } from "@/store/authStore";
@@ -30,6 +31,13 @@ export function AppSidebar() {
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     "Users": true // Default open Users for now as per design
   });
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const handleMobileClose = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   // Derive role prefix from current URL
   const rolePrefix = location.pathname.split("/")[1] || "admin";
@@ -53,11 +61,22 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <div className="flex items-center gap-2 px-4 py-4">
-          <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm ring-1 ring-blue-400/20">
-            <span className="font-bold text-xs">ERP</span>
+        <div className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center gap-2">
+            <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm ring-1 ring-blue-400/20">
+              <span className="font-bold text-xs">ERP</span>
+            </div>
+            <span className="font-bold tracking-tight text-slate-900 dark:text-slate-100">Management</span>
           </div>
-          <span className="font-bold tracking-tight text-slate-900 dark:text-slate-100">Management</span>
+          {isMobile && (
+            <button 
+              onClick={() => setOpenMobile(false)}
+              className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              aria-label="Close Sidebar"
+            >
+              <X size={18} />
+            </button>
+          )}
         </div>
       </SidebarHeader>
       <SidebarContent>
@@ -117,7 +136,7 @@ export function AppSidebar() {
                                       }
                                     `}
                                   >
-                                    <Link to={sub.link}>{sub.label}</Link>
+                                    <Link to={sub.link} onClick={handleMobileClose}>{sub.label}</Link>
                                   </SidebarMenuSubButton>
                                 </SidebarMenuSubItem>
                               ))}
@@ -140,7 +159,7 @@ export function AppSidebar() {
                             }
                           `}
                         >
-                          <Link to={item.link} className="flex items-center gap-3">
+                          <Link to={item.link} onClick={handleMobileClose} className="flex items-center gap-3">
                             {item.icon ? (
                               <item.icon size={20} strokeWidth={location.pathname === item.link ? 2.5 : 2} />
                             ) : (
@@ -165,7 +184,7 @@ export function AppSidebar() {
                           }
                         `}
                       >
-                        <Link to={group.link} className="flex items-center gap-3">
+                        <Link to={group.link} onClick={handleMobileClose} className="flex items-center gap-3">
                           <Icon size={20} strokeWidth={location.pathname === group.link ? 2.5 : 2} />
                           <span className="font-bold text-[15px]">{group.label}</span>
                         </Link>
@@ -190,7 +209,10 @@ export function AppSidebar() {
                 </div>
               </div>
               <button 
-                onClick={() => navigate(`/${rolePrefix}/settings`)}
+                onClick={() => {
+                  handleMobileClose();
+                  navigate(`/${rolePrefix}/settings`);
+                }}
                 className="w-full flex items-center gap-3 px-2 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors group/item text-slate-700 dark:text-slate-300"
               >
                 <Settings size={16} className="text-slate-400 dark:text-slate-500 group-hover/item:text-slate-600 dark:group-hover/item:text-slate-300" />
@@ -198,6 +220,7 @@ export function AppSidebar() {
               </button>
               <button 
                 onClick={() => {
+                  handleMobileClose();
                   logout();
                   navigate("/login");
                 }}

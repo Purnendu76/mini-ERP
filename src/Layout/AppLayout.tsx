@@ -87,7 +87,7 @@ export default function AppLayout() {
         </div>
 
         {/* Content Area */}
-        <div className="p-6 min-h-[calc(100vh-65px)]">
+        <div className="p-4 md:p-6 min-h-[calc(100vh-65px)]">
           {isPageLoading ? (
             <SuspenseLoader />
           ) : (

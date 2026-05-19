@@ -295,71 +295,70 @@ export default function AdminDashboard() {
   }, [businessUnit, invoiceStatus, period]);
 
   return (
-    <main className="min-h-screen bg-slate-50/50 dark:bg-background">
-      <div className="mx-auto max-w-[1600px] space-y-6 p-4 sm:p-6 lg:p-8">
-        <motion.section
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          className="overflow-hidden rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm"
-        >
-          <div className="relative p-6 lg:p-8">
-            <div className="absolute right-0 top-0 h-40 w-40 rounded-bl-[5rem] bg-blue-50 dark:bg-blue-900/10" />
-            <div className="absolute right-20 top-12 h-24 w-24 rounded-full bg-indigo-50 dark:bg-indigo-900/10" />
+    <div className="mx-auto max-w-[1600px] space-y-6 py-2 md:py-4">
+      <motion.section
+        initial={{ opacity: 0, y: 14 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45 }}
+        className="overflow-hidden rounded-[2rem] border border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm"
+      >
+        <div className="relative p-5 md:p-8">
+          <div className="absolute right-0 top-0 h-40 w-40 rounded-bl-[5rem] bg-blue-50 dark:bg-blue-900/10 hidden sm:block" />
+          <div className="absolute right-20 top-12 h-24 w-24 rounded-full bg-indigo-50 dark:bg-indigo-900/10 hidden sm:block" />
 
-            <div className="relative z-10 flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
-              <div>
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <Badge className="rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/40">
-                    ERP Overview
-                  </Badge>
-                  <span className="text-sm text-slate-500 dark:text-slate-400">{filterLabel}</span>
-                </div>
-
-                <h1 className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 md:text-4xl">
-                  Dashboard
-                </h1>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                  Monitor users, products, invoices, expenses, revenue, and
-                  business health from one clean dashboard.
-                </p>
+          <div className="relative z-10 flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
+            <div>
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <Badge className="rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/40">
+                  ERP Overview
+                </Badge>
+                <span className="text-sm text-slate-500 dark:text-slate-400">{filterLabel}</span>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Select value={businessUnit} onValueChange={setBusinessUnit}>
-                  <SelectTrigger className="h-11 w-full rounded-xl sm:w-[180px]">
-                    <SelectValue placeholder="Business Unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Units</SelectItem>
-                    <SelectItem value="sales">Sales</SelectItem>
-                    <SelectItem value="inventory">Inventory</SelectItem>
-                    <SelectItem value="finance">Finance</SelectItem>
-                  </SelectContent>
-                </Select>
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 md:text-4xl">
+                Dashboard
+              </h1>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+                Monitor users, products, invoices, expenses, revenue, and
+                business health from one clean dashboard.
+              </p>
+            </div>
 
-                <Select value={invoiceStatus} onValueChange={setInvoiceStatus}>
-                  <SelectTrigger className="h-11 w-full rounded-xl sm:w-[180px]">
-                    <SelectValue placeholder="Invoice Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="paid">Paid</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="overdue">Overdue</SelectItem>
-                  </SelectContent>
-                </Select>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Select value={businessUnit} onValueChange={setBusinessUnit}>
+                <SelectTrigger className="h-11 w-full rounded-xl sm:w-[180px]">
+                  <SelectValue placeholder="Business Unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Units</SelectItem>
+                  <SelectItem value="sales">Sales</SelectItem>
+                  <SelectItem value="inventory">Inventory</SelectItem>
+                  <SelectItem value="finance">Finance</SelectItem>
+                </SelectContent>
+              </Select>
 
-                <Button className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700">
-                  <Download className="mr-2 h-4 w-4" />
-                  Export Report
-                </Button>
-              </div>
+              <Select value={invoiceStatus} onValueChange={setInvoiceStatus}>
+                <SelectTrigger className="h-11 w-full rounded-xl sm:w-[180px]">
+                  <SelectValue placeholder="Invoice Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700">
+                <Download className="mr-2 h-4 w-4" />
+                Export Report
+              </Button>
             </div>
           </div>
-        </motion.section>
+        </div>
+      </motion.section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {kpiCards.map((card, index) => (
             <motion.div
               key={card.title}
@@ -372,11 +371,12 @@ export default function AdminDashboard() {
           ))}
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+        <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr] min-w-0">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.15 }}
+            className="min-w-0"
           >
             <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
               <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -401,7 +401,7 @@ export default function AdminDashboard() {
                   config={revenueChartConfig}
                   className="h-[330px] w-full"
                 >
-                  <AreaChart data={revenueData}>
+                  <AreaChart data={revenueData} margin={{ left: -10, right: 10, top: 10, bottom: 0 }}>
                     <defs>
                       <linearGradient
                         id="fillRevenue"
@@ -480,6 +480,7 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.2 }}
+            className="min-w-0"
           >
             <Card className="h-full rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
               <CardHeader>
@@ -537,11 +538,12 @@ export default function AdminDashboard() {
           </motion.div>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-[0.75fr_1.25fr]">
+        <section className="grid gap-6 xl:grid-cols-[0.75fr_1.25fr] min-w-0">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.25 }}
+            className="min-w-0"
           >
             <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
               <CardHeader>
@@ -556,7 +558,7 @@ export default function AdminDashboard() {
                   config={productChartConfig}
                   className="h-[280px] w-full"
                 >
-                  <BarChart data={productStockData}>
+                  <BarChart data={productStockData} margin={{ left: -10, right: 10, top: 10, bottom: 0 }}>
                     <CartesianGrid vertical={false} strokeDasharray="4 4" />
                     <XAxis
                       dataKey="category"
@@ -581,6 +583,7 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.3 }}
+            className="min-w-0"
           >
             <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between">
@@ -597,7 +600,8 @@ export default function AdminDashboard() {
               </CardHeader>
 
               <CardContent>
-                <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
+                {/* Desktop View Table */}
+                <div className="hidden md:block overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-slate-50 dark:bg-slate-900/50">
@@ -639,17 +643,56 @@ export default function AdminDashboard() {
                     </TableBody>
                   </Table>
                 </div>
+
+                {/* Mobile View Card List */}
+                <div className="block md:hidden space-y-3">
+                  {recentInvoicesData.map((invoice) => (
+                    <div
+                      key={invoice.invoice}
+                      className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10 p-4 space-y-3"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-slate-950 dark:text-slate-50">
+                          {invoice.invoice}
+                        </span>
+                        <StatusBadge status={invoice.status} />
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 dark:text-slate-400">Customer:</span>
+                        <span className="font-medium text-slate-700 dark:text-slate-300">
+                          {invoice.customer}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-500 dark:text-slate-400">Amount:</span>
+                        <span className="font-semibold text-slate-900 dark:text-slate-100">
+                          {invoice.amount}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-800/80 pt-2">
+                        <span>Date:</span>
+                        <span>{invoice.date}</span>
+                      </div>
+                    </div>
+                  ))}
+
+                  {recentInvoicesData.length === 0 && (
+                    <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-8 text-center text-sm text-slate-500">
+                      No invoices found for selected filter.
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </motion.div>
         </section>
 
-        <section className="grid gap-6 xl:grid-cols-3">
+        <section className="grid gap-6 xl:grid-cols-3 min-w-0">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.35 }}
-            className="xl:col-span-2"
+            className="xl:col-span-2 min-w-0"
           >
             <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
               <CardHeader>
@@ -678,6 +721,7 @@ export default function AdminDashboard() {
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.4 }}
+            className="min-w-0"
           >
             <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
               <CardHeader>
@@ -721,7 +765,6 @@ export default function AdminDashboard() {
           </motion.div>
         </section>
       </div>
-    </main>
   );
 }
 
