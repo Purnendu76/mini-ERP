@@ -144,11 +144,13 @@ export default function Products() {
     reset,
     setValue,
     watch,
-    formState: { errors, isSubmitting },
-  } = useForm<ProductFormValues>({
+    formState,
+  } = useForm<any>({
     resolver: zodResolver(productSchema),
     defaultValues: defaultFormValues,
   });
+  const errors = formState.errors as any;
+  const { isSubmitting } = formState;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const watchedImage = watch("image");
@@ -523,7 +525,6 @@ export default function Products() {
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 rounded-xl" align="start">
                   <Calendar
-                    initialFocus
                     mode="range"
                     defaultMonth={dateRange?.from}
                     selected={dateRange}

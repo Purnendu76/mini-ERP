@@ -161,7 +161,6 @@ export default function AuditLog() {
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0 rounded-xl" align="start">
               <Calendar
-                initialFocus
                 mode="range"
                 defaultMonth={dateRange?.from}
                 selected={dateRange}
