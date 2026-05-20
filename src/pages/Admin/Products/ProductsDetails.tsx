@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useProductStore } from "@/store/productStore";
+import { useAuthStore } from "@/store/authStore";
 import { 
   ChevronLeft, 
   Package, 
@@ -21,6 +22,8 @@ import { Separator } from "@/components/ui/separator";
 export default function ProductsDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const rolePrefix = user?.role.toLowerCase() || "admin";
   const { getProductById } = useProductStore();
   const product = getProductById(id || "");
 
@@ -29,7 +32,7 @@ export default function ProductsDetails() {
       <div className="flex h-[60vh] flex-col items-center justify-center space-y-4">
         <Package className="h-12 w-12 text-muted-foreground" />
         <h2 className="text-xl font-semibold">Product not found</h2>
-        <Button onClick={() => navigate("/admin/products")}>
+        <Button onClick={() => navigate(`/${rolePrefix}/products`)}>
           <ChevronLeft className="mr-2 h-4 w-4" />
           Back to Products
         </Button>
@@ -45,7 +48,7 @@ export default function ProductsDetails() {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => navigate("/admin/products")}
+            onClick={() => navigate(`/${rolePrefix}/products`)}
             className="-ml-2 mb-2"
           >
             <ChevronLeft className="mr-2 h-4 w-4" />

@@ -21,13 +21,16 @@ const Invoices = lazy(() => import("@/pages/Admin/invoice/Invoices"));
 const Products = lazy(() => import("@/pages/Admin/Products/Products"));
 const UsersList = lazy(() => import("@/pages/Admin/Users"));
 const SettingPage = lazy(() => import("@/pages/Default/SettingPage"));
+const InvoiceDetails = lazy(() => import("@/pages/Admin/invoice/InvoiceDetails"));
+const ProductsDetails = lazy(() => import("@/pages/Admin/Products/ProductsDetails"));
+const ExpensesDetails = lazy(() => import("@/pages/Admin/Expenses/ExpensesDetails"));
 
 export const staffRoutes: AppRoute = {
   label: "Staff",
   path: "staff",
   icon: UserCog,
   element: (
-    <RoleRoute allowedRoles={["Admin", "Manager", "Staff"]}>
+    <RoleRoute allowedRoles={["Staff"]}>
       <AppLayout />
     </RoleRoute>
   ),
@@ -51,6 +54,7 @@ export const staffRoutes: AppRoute = {
           <Products />
         </Suspense>
       ),
+      hidden: true,
     },
     {
       label: "Expenses",
@@ -79,6 +83,36 @@ export const staffRoutes: AppRoute = {
       element: (
         <Suspense fallback={<SuspenseLoader />}>
           <StaffDetails />
+        </Suspense>
+      ),
+      hidden: true,
+    },
+    {
+      label: "Invoice Details",
+      path: "invoices/:id",
+      element: (
+        <Suspense fallback={<SuspenseLoader />}>
+          <InvoiceDetails />
+        </Suspense>
+      ),
+      hidden: true,
+    },
+    {
+      label: "Product Details",
+      path: "products/:id",
+      element: (
+        <Suspense fallback={<SuspenseLoader />}>
+          <ProductsDetails />
+        </Suspense>
+      ),
+      hidden: true,
+    },
+    {
+      label: "Expense Details",
+      path: "expenses/:id",
+      element: (
+        <Suspense fallback={<SuspenseLoader />}>
+          <ExpensesDetails />
         </Suspense>
       ),
       hidden: true,

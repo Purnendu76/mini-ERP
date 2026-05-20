@@ -1,10 +1,14 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { ChangeEvent } from "react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import bcrypt from "bcryptjs";
+import { useAuthStore } from "@/store/authStore";
+import { getRegisteredUsers, saveRegisteredUsers } from "@/lib/registeredUsers";
+import { useUserStore } from "@/store/userStore";
 import {
   Camera,
   CheckCircle2,
@@ -55,7 +59,8 @@ type ProfileFormValues = z.infer<typeof profileSchema>;
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 
 export default function SettingPage() {
-  const [avatarPreview, setAvatarPreview] = useState("");
+  const { user } = useAuthStore();
+  const [avatarPreview, setAvatarPreview] = useState(user?.photo || "");
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -63,12 +68,26 @@ export default function SettingPage() {
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      fullName: "System Admin",
-      email: "admin@invoice-system.local",
-      role: "ADMIN",
+      fullName: user?.name || "System Admin",
+      email: user?.email || "admin@example.com",
+      role: user?.role || "Admin",
       bio: "",
     },
   });
+
+  useEffect(() => {
+    if (user) {
+      profileForm.reset({
+        fullName: user.name,
+        email: user.email,
+        role: user.role,
+        bio: "",
+      });
+      if (user.photo) {
+        setAvatarPreview(user.photo);
+      }
+    }
+  }, [user, profileForm]);
 
   const passwordForm = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
@@ -100,7 +119,7 @@ export default function SettingPage() {
         valid: /\d/.test(newPassword),
       },
     ],
-    [newPassword]
+    [newPassword],
   );
 
   const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -131,19 +150,56 @@ export default function SettingPage() {
       JSON.stringify({
         ...values,
         avatar: avatarPreview,
-      })
+      }),
     );
 
     toast.success("Profile updated successfully");
   };
 
   const handlePasswordSubmit = async (values: PasswordFormValues) => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    if (!user) {
+      toast.error("You must be logged in to change your password.");
+      return;
+    }
 
-    console.log(values);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+
+    const registeredUsers = getRegisteredUsers();
+    const currentUser = registeredUsers.find(
+      (u) => u.email.toLowerCase() === user.email.toLowerCase(),
+    );
+
+    if (!currentUser) {
+      toast.error("User account not found.");
+      return;
+    }
+
+    // Verify current password
+    const isCurrentPasswordValid = bcrypt.compareSync(
+      values.currentPassword.trim(),
+      currentUser.password,
+    );
+
+    if (!isCurrentPasswordValid) {
+      passwordForm.setError("currentPassword", {
+        message: "Current password is incorrect",
+      });
+      toast.error("Current password is incorrect.");
+      return;
+    }
+
+    // Hash and save new password
+    const hashedNewPassword = bcrypt.hashSync(values.newPassword.trim(), 10);
+    const updatedUsers = registeredUsers.map((u) =>
+      u.id === currentUser.id ? { ...u, password: hashedNewPassword } : u,
+    );
+    saveRegisteredUsers(updatedUsers);
+
+    // Sync user store so other components pick up the change
+    useUserStore.getState().syncWithAuth();
+
     passwordForm.reset();
-
-    toast.success("Password updated successfully");
+    toast.success("Password updated successfully!");
   };
 
   return (
@@ -180,7 +236,8 @@ export default function SettingPage() {
               <CardHeader className="border-b border-border px-6 py-5">
                 <CardTitle className="text-lg">Profile Information</CardTitle>
                 <CardDescription>
-                  Update your account&apos;s profile information and email address.
+                  Update your account&apos;s profile information and email
+                  address.
                 </CardDescription>
               </CardHeader>
 
@@ -330,7 +387,8 @@ export default function SettingPage() {
               <CardHeader className="border-b border-border px-6 py-5">
                 <CardTitle className="text-lg">Change Password</CardTitle>
                 <CardDescription>
-                  Ensure your account is using a long, random password to stay secure.
+                  Ensure your account is using a long, random password to stay
+                  secure.
                 </CardDescription>
               </CardHeader>
 
@@ -364,9 +422,7 @@ export default function SettingPage() {
                       label="Confirm New Password"
                       placeholder="Confirm new password"
                       showPassword={showConfirmPassword}
-                      onToggle={() =>
-                        setShowConfirmPassword((prev) => !prev)
-                      }
+                      onToggle={() => setShowConfirmPassword((prev) => !prev)}
                       register={passwordForm.register("confirmPassword")}
                       error={
                         passwordForm.formState.errors.confirmPassword?.message
@@ -384,7 +440,10 @@ export default function SettingPage() {
 
                     <div className="mt-5 space-y-4">
                       {passwordRequirements.map((item) => (
-                        <div key={item.label} className="flex items-center gap-3">
+                        <div
+                          key={item.label}
+                          className="flex items-center gap-3"
+                        >
                           <CheckCircle2
                             className={
                               item.valid

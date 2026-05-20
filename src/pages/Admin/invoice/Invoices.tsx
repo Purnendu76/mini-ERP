@@ -1,4 +1,4 @@
-import {  useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
@@ -41,12 +41,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -85,11 +80,12 @@ import {
 } from "@/components/ui/table";
 
 import { useInvoiceStore } from "@/store/invoiceStore";
+import { useAuthStore } from "@/store/authStore";
+import { canPerformAction } from "@/config/permissions";
 import type {
   Invoice,
   InvoiceStatus,
   InvoiceItem,
-  
 } from "@/types/invoice.types";
 
 const invoiceStatuses: InvoiceStatus[] = [
@@ -138,11 +134,22 @@ const defaultFormValues: InvoiceFormValues = {
   ],
 };
 
-
-
 export default function Invoices() {
   const navigate = useNavigate();
-  const { invoices, addInvoice, updateInvoice, deleteInvoice } = useInvoiceStore();
+  const currentUser = useAuthStore((state) => state.user);
+  const rolePrefix = currentUser?.role.toLowerCase() || "admin";
+  const canCreate = currentUser
+    ? canPerformAction(currentUser.role, "create", "invoices")
+    : false;
+  const canEdit = currentUser
+    ? canPerformAction(currentUser.role, "edit", "invoices")
+    : false;
+  const canDelete = currentUser
+    ? canPerformAction(currentUser.role, "delete", "invoices")
+    : false;
+
+  const { invoices, addInvoice, updateInvoice, deleteInvoice } =
+    useInvoiceStore();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
@@ -152,7 +159,7 @@ export default function Invoices() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [deleteInvoiceItem, setDeleteInvoiceItem] = useState<Invoice | null>(
-    null
+    null,
   );
   const [previewInvoice, setPreviewInvoice] = useState<Invoice | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -161,17 +168,11 @@ export default function Invoices() {
 
   const pageSize = 6;
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    reset,
-    watch,
-    formState,
-  } = useForm<any>({
-    resolver: zodResolver(invoiceSchema),
-    defaultValues: defaultFormValues,
-  });
+  const { register, control, handleSubmit, reset, watch, formState } =
+    useForm<any>({
+      resolver: zodResolver(invoiceSchema),
+      defaultValues: defaultFormValues,
+    });
   const errors = formState.errors as any;
   const { isSubmitting } = formState;
 
@@ -205,7 +206,7 @@ export default function Invoices() {
         (invoice) =>
           invoice.invoiceNumber.toLowerCase().includes(value) ||
           invoice.customerName.toLowerCase().includes(value) ||
-          invoice.customerEmail.toLowerCase().includes(value)
+          invoice.customerEmail.toLowerCase().includes(value),
       );
     }
 
@@ -217,7 +218,9 @@ export default function Invoices() {
       data = data.filter((invoice) => {
         const invDate = new Date(invoice.invoiceDate);
         const start = startOfDay(dateRange.from!);
-        const end = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from!);
+        const end = dateRange.to
+          ? endOfDay(dateRange.to)
+          : endOfDay(dateRange.from!);
         return isWithinInterval(invDate, { start, end });
       });
     }
@@ -233,30 +236,28 @@ export default function Invoices() {
     if (sortBy === "date-asc") {
       data.sort(
         (a, b) =>
-          new Date(a.invoiceDate).getTime() -
-          new Date(b.invoiceDate).getTime()
+          new Date(a.invoiceDate).getTime() - new Date(b.invoiceDate).getTime(),
       );
     }
 
     if (sortBy === "date-desc") {
       data.sort(
         (a, b) =>
-          new Date(b.invoiceDate).getTime() -
-          new Date(a.invoiceDate).getTime()
+          new Date(b.invoiceDate).getTime() - new Date(a.invoiceDate).getTime(),
       );
     }
 
     if (sortBy === "newest") {
       data.sort(
         (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
     }
 
     if (sortBy === "oldest") {
       data.sort(
         (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       );
     }
 
@@ -272,12 +273,12 @@ export default function Invoices() {
 
   const totalInvoiceAmount = invoices.reduce(
     (sum, invoice) => sum + invoice.total,
-    0
+    0,
   );
 
   const paidCount = invoices.filter((item) => item.status === "Paid").length;
   const pendingCount = invoices.filter(
-    (item) => item.status === "Pending"
+    (item) => item.status === "Pending",
   ).length;
 
   const openAddInvoiceForm = () => {
@@ -379,28 +380,31 @@ export default function Invoices() {
   };
 
   const exportToExcel = () => {
-    const dataToExport = invoices.length > 0 ? invoices.map(inv => ({
-      ...inv,
-      items: JSON.stringify(inv.items)
-    })) : [
-      {
-        invoiceNumber: "",
-        customerName: "",
-        customerEmail: "",
-        invoiceDate: "",
-        dueDate: "",
-        status: "Pending",
-        taxRate: 18,
-        items: "[]",
-        createdAt: new Date().toISOString()
-      }
-    ];
+    const dataToExport =
+      invoices.length > 0
+        ? invoices.map((inv) => ({
+            ...inv,
+            items: JSON.stringify(inv.items),
+          }))
+        : [
+            {
+              invoiceNumber: "",
+              customerName: "",
+              customerEmail: "",
+              invoiceDate: "",
+              dueDate: "",
+              status: "Pending",
+              taxRate: 18,
+              items: "[]",
+              createdAt: new Date().toISOString(),
+            },
+          ];
 
     setIsExporting(true);
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Invoices");
-    
+
     setTimeout(() => {
       XLSX.writeFile(workbook, "invoices_records.xlsx");
       setIsExporting(false);
@@ -430,15 +434,22 @@ export default function Invoices() {
             try {
               parsedItems = item.items ? JSON.parse(item.items) : [];
             } catch (pErr) {
-              console.warn("Could not parse items for invoice", item.invoiceNumber);
+              console.warn(
+                "Could not parse items for invoice",
+                item.invoiceNumber,
+              );
             }
 
             addInvoice({
               invoiceNumber: String(item.invoiceNumber),
               customerName: String(item.customerName),
               customerEmail: String(item.customerEmail || ""),
-              invoiceDate: String(item.invoiceDate || new Date().toISOString().split('T')[0]),
-              dueDate: String(item.dueDate || new Date().toISOString().split('T')[0]),
+              invoiceDate: String(
+                item.invoiceDate || new Date().toISOString().split("T")[0],
+              ),
+              dueDate: String(
+                item.dueDate || new Date().toISOString().split("T")[0],
+              ),
               status: (item.status as any) || "Pending",
               taxRate: Number(item.taxRate || 18),
               items: parsedItems,
@@ -498,20 +509,24 @@ export default function Invoices() {
                 className="hidden"
                 onChange={importFromExcel}
               />
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isImporting}
-                className="h-10 rounded-xl border-blue-200 bg-blue-50/50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-400"
-                onClick={() => document.getElementById("invoice-import")?.click()}
-              >
-                {isImporting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="mr-2 h-4 w-4" />
-                )}
-                {isImporting ? "Importing..." : "Import"}
-              </Button>
+              {canCreate && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isImporting}
+                  className="h-10 rounded-xl border-blue-200 bg-blue-50/50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-400"
+                  onClick={() =>
+                    document.getElementById("invoice-import")?.click()
+                  }
+                >
+                  {isImporting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="mr-2 h-4 w-4" />
+                  )}
+                  {isImporting ? "Importing..." : "Import"}
+                </Button>
+              )}
 
               <Button
                 type="button"
@@ -528,14 +543,16 @@ export default function Invoices() {
                 {isExporting ? "Exporting..." : "Export"}
               </Button>
 
-              <Button
-                type="button"
-                onClick={openAddInvoiceForm}
-                className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 shadow-sm"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Invoice
-              </Button>
+              {canCreate && (
+                <Button
+                  type="button"
+                  onClick={openAddInvoiceForm}
+                  className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 shadow-sm"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Invoice
+                </Button>
+              )}
             </div>
           </div>
         </section>
@@ -627,7 +644,7 @@ export default function Invoices() {
                     variant="outline"
                     className={cn(
                       "h-10 justify-start text-left font-normal rounded-xl border-border bg-card",
-                      !dateRange && "text-muted-foreground"
+                      !dateRange && "text-muted-foreground",
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -668,7 +685,9 @@ export default function Invoices() {
                 <SelectContent>
                   <SelectItem value="newest">Newest First</SelectItem>
                   <SelectItem value="oldest">Oldest First</SelectItem>
-                  <SelectItem value="amount-asc">Amount: Low to High</SelectItem>
+                  <SelectItem value="amount-asc">
+                    Amount: Low to High
+                  </SelectItem>
                   <SelectItem value="amount-desc">
                     Amount: High to Low
                   </SelectItem>
@@ -707,9 +726,11 @@ export default function Invoices() {
                             <FileText className="h-5 w-5" />
                           </div>
 
-                          <div 
+                          <div
                             className="cursor-pointer group/link"
-                            onClick={() => navigate(`/admin/invoices/${invoice.id}`)}
+                            onClick={() =>
+                              navigate(`/${rolePrefix}/invoices/${invoice.id}`)
+                            }
                           >
                             <p className="font-bold text-blue-600 dark:text-blue-400 group-hover/link:underline">
                               {invoice.invoiceNumber}
@@ -771,26 +792,34 @@ export default function Invoices() {
                             </DropdownMenuItem>
 
                             <DropdownMenuItem
-                              onClick={() => navigate(`/admin/invoices/${invoice.id}`)}
+                              onClick={() =>
+                                navigate(
+                                  `/${rolePrefix}/invoices/${invoice.id}`,
+                                )
+                              }
                             >
                               <FileText className="mr-2 h-4 w-4" />
                               Full Details
                             </DropdownMenuItem>
 
-                            <DropdownMenuItem
-                              onClick={() => openEditInvoiceForm(invoice)}
-                            >
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
+                            {canEdit && (
+                              <DropdownMenuItem
+                                onClick={() => openEditInvoiceForm(invoice)}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
 
-                            <DropdownMenuItem
-                              className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
-                              onClick={() => setDeleteInvoiceItem(invoice)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
+                            {canDelete && (
+                              <DropdownMenuItem
+                                className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+                                onClick={() => setDeleteInvoiceItem(invoice)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -907,10 +936,7 @@ export default function Invoices() {
                 />
               </FormField>
 
-              <FormField
-                label="Invoice Status"
-                error={errors.status?.message}
-              >
+              <FormField label="Invoice Status" error={errors.status?.message}>
                 <Controller
                   control={control}
                   name="status"
@@ -945,7 +971,7 @@ export default function Invoices() {
                           variant="outline"
                           className={cn(
                             "h-10 w-full justify-start rounded-xl text-left font-normal",
-                            !field.value && "text-muted-foreground"
+                            !field.value && "text-muted-foreground",
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
@@ -981,7 +1007,7 @@ export default function Invoices() {
                           variant="outline"
                           className={cn(
                             "h-10 w-full justify-start rounded-xl text-left font-normal",
-                            !field.value && "text-muted-foreground"
+                            !field.value && "text-muted-foreground",
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
@@ -1137,8 +1163,8 @@ export default function Invoices() {
                 {isSubmitting
                   ? "Saving..."
                   : editingInvoice
-                  ? "Update Invoice"
-                  : "Create Invoice"}
+                    ? "Update Invoice"
+                    : "Create Invoice"}
               </Button>
             </div>
           </form>
@@ -1155,7 +1181,8 @@ export default function Invoices() {
               <DialogHeader>
                 <DialogTitle>Invoice Preview</DialogTitle>
                 <DialogDescription>
-                  Clean invoice details preview for {previewInvoice.invoiceNumber}
+                  Clean invoice details preview for{" "}
+                  {previewInvoice.invoiceNumber}
                 </DialogDescription>
               </DialogHeader>
 
@@ -1260,9 +1287,7 @@ export default function Invoices() {
           </AlertDialogHeader>
 
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
@@ -1350,8 +1375,7 @@ function StatusBadge({ status }: { status: InvoiceStatus }) {
     Paid: "bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/10 dark:text-emerald-400",
     Pending:
       "bg-amber-500/10 text-amber-700 hover:bg-amber-500/10 dark:text-amber-400",
-    Overdue:
-      "bg-red-500/10 text-red-700 hover:bg-red-500/10 dark:text-red-400",
+    Overdue: "bg-red-500/10 text-red-700 hover:bg-red-500/10 dark:text-red-400",
     Cancelled:
       "bg-slate-500/10 text-slate-700 hover:bg-slate-500/10 dark:text-slate-300",
   };

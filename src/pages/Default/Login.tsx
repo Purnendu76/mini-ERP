@@ -85,7 +85,9 @@ export default function LoginPage() {
         navigate("/dashboard");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Something went wrong");
+      toast.error(
+        error instanceof Error ? error.message : "Something went wrong",
+      );
     }
   };
 

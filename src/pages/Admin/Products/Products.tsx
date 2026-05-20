@@ -5,7 +5,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
-import { format, isWithinInterval, startOfDay, endOfDay, parseISO } from "date-fns";
+import {
+  format,
+  isWithinInterval,
+  startOfDay,
+  endOfDay,
+  parseISO,
+} from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import {
@@ -14,7 +20,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { 
+import {
   Calendar as CalendarIcon,
   Boxes,
   ImageIcon,
@@ -31,6 +37,8 @@ import {
 } from "lucide-react";
 
 import { useProductStore } from "@/store/productStore";
+import { useAuthStore } from "@/store/authStore";
+import { canPerformAction } from "@/config/permissions";
 import type { Product, ProductStatus } from "@/types/product.types";
 
 import { Badge } from "@/components/ui/badge";
@@ -45,12 +53,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -82,7 +85,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-
 const productSchema = z.object({
   name: z.string().min(1, "Product name is required"),
   sku: z.string().min(1, "SKU is required"),
@@ -106,7 +108,6 @@ const categories = [
   "Marketing",
 ];
 
-
 const defaultFormValues: ProductFormValues = {
   name: "",
   sku: "",
@@ -119,6 +120,18 @@ const defaultFormValues: ProductFormValues = {
 
 export default function Products() {
   const navigate = useNavigate();
+  const currentUser = useAuthStore((state) => state.user);
+  const rolePrefix = currentUser?.role.toLowerCase() || "admin";
+  const canCreate = currentUser
+    ? canPerformAction(currentUser.role, "create", "products")
+    : false;
+  const canEdit = currentUser
+    ? canPerformAction(currentUser.role, "edit", "products")
+    : false;
+  const canDelete = currentUser
+    ? canPerformAction(currentUser.role, "delete", "products")
+    : false;
+
   const { products, addProduct, updateProduct, deleteProduct } =
     useProductStore();
   const [search, setSearch] = useState("");
@@ -137,18 +150,11 @@ export default function Products() {
 
   const pageSize = 5;
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    reset,
-    setValue,
-    watch,
-    formState,
-  } = useForm<any>({
-    resolver: zodResolver(productSchema),
-    defaultValues: defaultFormValues,
-  });
+  const { register, control, handleSubmit, reset, setValue, watch, formState } =
+    useForm<any>({
+      resolver: zodResolver(productSchema),
+      defaultValues: defaultFormValues,
+    });
   const errors = formState.errors as any;
   const { isSubmitting } = formState;
 
@@ -175,7 +181,7 @@ export default function Products() {
       data = data.filter(
         (product) =>
           product.name.toLowerCase().includes(value) ||
-          product.sku.toLowerCase().includes(value)
+          product.sku.toLowerCase().includes(value),
       );
     }
 
@@ -191,7 +197,9 @@ export default function Products() {
       data = data.filter((product) => {
         const prodDate = parseISO(product.createdAt);
         const start = startOfDay(dateRange.from!);
-        const end = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from!);
+        const end = dateRange.to
+          ? endOfDay(dateRange.to)
+          : endOfDay(dateRange.from!);
         return isWithinInterval(prodDate, { start, end });
       });
     }
@@ -215,14 +223,14 @@ export default function Products() {
     if (sortBy === "newest") {
       data.sort(
         (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
     }
 
     if (sortBy === "oldest") {
       data.sort(
         (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       );
     }
 
@@ -288,22 +296,25 @@ export default function Products() {
   };
 
   const exportToExcel = () => {
-    const dataToExport = products.length > 0 ? products : [
-      {
-        name: "",
-        sku: "",
-        category: "",
-        price: 0,
-        stock: 0,
-        status: "In Stock"
-      }
-    ];
+    const dataToExport =
+      products.length > 0
+        ? products
+        : [
+            {
+              name: "",
+              sku: "",
+              category: "",
+              price: 0,
+              stock: 0,
+              status: "In Stock",
+            },
+          ];
 
     setIsExporting(true);
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
-    
+
     setTimeout(() => {
       XLSX.writeFile(workbook, "products_inventory.xlsx");
       setIsExporting(false);
@@ -328,7 +339,12 @@ export default function Products() {
         let importedCount = 0;
         json.forEach((item) => {
           // Basic validation and mapping
-          if (item.name && item.sku && item.category && item.price !== undefined) {
+          if (
+            item.name &&
+            item.sku &&
+            item.category &&
+            item.price !== undefined
+          ) {
             addProduct({
               name: String(item.name),
               sku: String(item.sku),
@@ -387,7 +403,8 @@ export default function Products() {
               </h1>
 
               <p className="mt-1 text-sm text-muted-foreground">
-                Manage product inventory, stock status, price, SKU, and category.
+                Manage product inventory, stock status, price, SKU, and
+                category.
               </p>
             </div>
 
@@ -399,20 +416,24 @@ export default function Products() {
                 className="hidden"
                 onChange={importFromExcel}
               />
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isImporting}
-                className="h-10 rounded-xl border-blue-200 bg-blue-50/50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-400"
-                onClick={() => document.getElementById("product-import")?.click()}
-              >
-                {isImporting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="mr-2 h-4 w-4" />
-                )}
-                {isImporting ? "Importing..." : "Import"}
-              </Button>
+              {canCreate && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isImporting}
+                  className="h-10 rounded-xl border-blue-200 bg-blue-50/50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-400"
+                  onClick={() =>
+                    document.getElementById("product-import")?.click()
+                  }
+                >
+                  {isImporting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="mr-2 h-4 w-4" />
+                  )}
+                  {isImporting ? "Importing..." : "Import"}
+                </Button>
+              )}
 
               <Button
                 type="button"
@@ -429,14 +450,16 @@ export default function Products() {
                 {isExporting ? "Exporting..." : "Export"}
               </Button>
 
-              <Button
-                type="button"
-                onClick={openAddProductForm}
-                className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Product
-              </Button>
+              {canCreate && (
+                <Button
+                  type="button"
+                  onClick={openAddProductForm}
+                  className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Product
+                </Button>
+              )}
             </div>
           </div>
         </section>
@@ -450,7 +473,9 @@ export default function Products() {
           />
           <SummaryCard
             title="Low Stock"
-            value={products.filter((item) => item.status === "Low Stock").length}
+            value={
+              products.filter((item) => item.status === "Low Stock").length
+            }
             description="Needs attention"
             icon={Package}
           />
@@ -505,7 +530,7 @@ export default function Products() {
                     variant="outline"
                     className={cn(
                       "h-10 justify-start text-left font-normal rounded-xl border-border bg-card",
-                      !dateRange && "text-muted-foreground"
+                      !dateRange && "text-muted-foreground",
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -628,9 +653,11 @@ export default function Products() {
                             )}
                           </div>
 
-                          <div 
+                          <div
                             className="cursor-pointer group/link"
-                            onClick={() => navigate(`/admin/products/${product.id}`)}
+                            onClick={() =>
+                              navigate(`/${rolePrefix}/products/${product.id}`)
+                            }
                           >
                             <p className="font-bold text-blue-600 dark:text-blue-400 group-hover/link:underline">
                               {product.name}
@@ -673,27 +700,35 @@ export default function Products() {
                           </DropdownMenuTrigger>
 
                           <DropdownMenuContent align="end" className="w-36">
-                             <DropdownMenuItem
-                              onClick={() => navigate(`/admin/products/${product.id}`)}
+                            <DropdownMenuItem
+                              onClick={() =>
+                                navigate(
+                                  `/${rolePrefix}/products/${product.id}`,
+                                )
+                              }
                             >
                               <Boxes className="mr-2 h-4 w-4" />
                               Full Details
                             </DropdownMenuItem>
 
-                            <DropdownMenuItem
-                              onClick={() => openEditProductForm(product)}
-                            >
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
+                            {canEdit && (
+                              <DropdownMenuItem
+                                onClick={() => openEditProductForm(product)}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
 
-                            <DropdownMenuItem
-                              className="text-red-600 focus:text-red-600"
-                              onClick={() => setProductToDelete(product)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
+                            {canDelete && (
+                              <DropdownMenuItem
+                                className="text-red-600 focus:text-red-600"
+                                onClick={() => setProductToDelete(product)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -777,10 +812,7 @@ export default function Products() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="grid gap-4 md:grid-cols-2">
-              <FormField
-                label="Product Name"
-                error={errors.name?.message}
-              >
+              <FormField label="Product Name" error={errors.name?.message}>
                 <Input
                   placeholder="Enter product name"
                   className="h-10 rounded-xl"
@@ -857,23 +889,29 @@ export default function Products() {
               </FormField>
             </div>
 
-            <div 
+            <div
               className="rounded-2xl border border-dashed border-border bg-muted/50 p-5 cursor-pointer hover:bg-muted/80 transition-colors relative overflow-hidden"
               onClick={() => fileInputRef.current?.click()}
             >
-              <input 
-                type="file" 
-                ref={fileInputRef} 
-                onChange={handleImageUpload} 
-                accept="image/*" 
-                className="hidden" 
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                accept="image/*"
+                className="hidden"
               />
               {watchedImage ? (
                 <div className="flex flex-col items-center gap-3">
                   <div className="h-32 w-32 rounded-xl overflow-hidden border">
-                    <img src={watchedImage} alt="Preview" className="h-full w-full object-cover" />
+                    <img
+                      src={watchedImage}
+                      alt="Preview"
+                      className="h-full w-full object-cover"
+                    />
                   </div>
-                  <p className="text-xs text-blue-600 font-medium">Click to change image</p>
+                  <p className="text-xs text-blue-600 font-medium">
+                    Click to change image
+                  </p>
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
@@ -911,8 +949,8 @@ export default function Products() {
                 {isSubmitting
                   ? "Saving..."
                   : editingProduct
-                  ? "Update Product"
-                  : "Create Product"}
+                    ? "Update Product"
+                    : "Create Product"}
               </Button>
             </div>
           </form>
@@ -936,9 +974,7 @@ export default function Products() {
           </AlertDialogHeader>
 
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
@@ -1013,9 +1049,12 @@ function SummaryCard({
 
 function StatusBadge({ status }: { status: ProductStatus }) {
   const classes: Record<ProductStatus, string> = {
-    "In Stock": "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/15 border-none",
-    "Low Stock": "bg-amber-500/10 text-amber-500 hover:bg-amber-500/15 border-none",
-    "Out of Stock": "bg-red-500/10 text-red-500 hover:bg-red-500/15 border-none",
+    "In Stock":
+      "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/15 border-none",
+    "Low Stock":
+      "bg-amber-500/10 text-amber-500 hover:bg-amber-500/15 border-none",
+    "Out of Stock":
+      "bg-red-500/10 text-red-500 hover:bg-red-500/15 border-none",
   };
 
   return <Badge className={`rounded-full ${classes[status]}`}>{status}</Badge>;

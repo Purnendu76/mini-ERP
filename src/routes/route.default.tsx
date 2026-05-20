@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Navigate } from "react-router-dom";
 import { SuspenseLoader } from "@/components/loaders/SuspenseLoader";
+import GuestRoute from "@/components/auth/GuestRoute";
 import type { AppRoute } from "./utils";
 
 // Lazy-loaded components
@@ -14,9 +15,11 @@ export const defaultRoutes: AppRoute[] = [
   {
     path: "/login",
     element: (
-      <Suspense fallback={<SuspenseLoader />}>
-        <Login />
-      </Suspense>
+      <GuestRoute>
+        <Suspense fallback={<SuspenseLoader />}>
+          <Login />
+        </Suspense>
+      </GuestRoute>
     ),
   },
   {

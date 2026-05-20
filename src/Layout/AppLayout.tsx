@@ -28,6 +28,20 @@ export default function AppLayout() {
     return () => clearTimeout(timer);
   }, [location.pathname]);
 
+  // Centralized security guard: ensure user can only access pages matching their role prefix
+  useEffect(() => {
+    if (user) {
+      const pathPrefix = location.pathname.split("/")[1];
+      if (pathPrefix === "admin" && user.role !== "Admin") {
+        navigate("/not-found", { replace: true });
+      } else if (pathPrefix === "manager" && user.role !== "Manager") {
+        navigate("/not-found", { replace: true });
+      } else if (pathPrefix === "staff" && user.role !== "Staff") {
+        navigate("/not-found", { replace: true });
+      }
+    }
+  }, [user, location.pathname, navigate]);
+
   // Logic to find current page label
   const findPageLabel = () => {
     for (const route of routes) {
@@ -78,7 +92,10 @@ export default function AppLayout() {
             </button>
             <div className="size-9 rounded-full overflow-hidden border-2 border-white dark:border-slate-800 shadow-md ring-1 ring-slate-200 dark:ring-slate-700 cursor-pointer hover:ring-blue-400 transition-all">
               <img
-                src={user?.photo || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop"}
+                src={
+                  user?.photo ||
+                  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop"
+                }
                 alt={user?.name || "User"}
                 className="size-full object-cover"
               />
