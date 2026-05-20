@@ -26,7 +26,13 @@ import {
   Users,
   WalletCards,
 } from "lucide-react";
-import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import {
+  format,
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  isWithinInterval,
+} from "date-fns";
 
 import { useInvoiceStore } from "@/store/invoiceStore";
 import { useExpenseStore } from "@/store/expenseStore";
@@ -36,12 +42,7 @@ import { useAuditStore } from "@/store/auditStore";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartTooltip,
@@ -154,12 +155,13 @@ export default function AdminDashboard() {
 
   const invoiceStatusData = useMemo(() => {
     const total = invoices.length;
-    if (total === 0) return [
-      { name: "Paid", value: 0, fill: "#2563eb" },
-      { name: "Pending", value: 0, fill: "#f59e0b" },
-      { name: "Overdue", value: 0, fill: "#ef4444" },
-      { name: "Cancelled", value: 0, fill: "#64748b" },
-    ];
+    if (total === 0)
+      return [
+        { name: "Paid", value: 0, fill: "#2563eb" },
+        { name: "Pending", value: 0, fill: "#f59e0b" },
+        { name: "Overdue", value: 0, fill: "#ef4444" },
+        { name: "Cancelled", value: 0, fill: "#64748b" },
+      ];
 
     const counts = {
       Paid: invoices.filter((i) => i.status === "Paid").length,
@@ -169,15 +171,31 @@ export default function AdminDashboard() {
     };
 
     return [
-      { name: "Paid", value: Math.round((counts.Paid / total) * 100), fill: "#2563eb" },
-      { name: "Pending", value: Math.round((counts.Pending / total) * 100), fill: "#f59e0b" },
-      { name: "Overdue", value: Math.round((counts.Overdue / total) * 100), fill: "#ef4444" },
-      { name: "Cancelled", value: Math.round((counts.Cancelled / total) * 100), fill: "#64748b" },
+      {
+        name: "Paid",
+        value: Math.round((counts.Paid / total) * 100),
+        fill: "#2563eb",
+      },
+      {
+        name: "Pending",
+        value: Math.round((counts.Pending / total) * 100),
+        fill: "#f59e0b",
+      },
+      {
+        name: "Overdue",
+        value: Math.round((counts.Overdue / total) * 100),
+        fill: "#ef4444",
+      },
+      {
+        name: "Cancelled",
+        value: Math.round((counts.Cancelled / total) * 100),
+        fill: "#64748b",
+      },
     ];
   }, [invoices]);
 
   const recentInvoicesData = useMemo(() => {
-    const data = invoices.slice(0, 5).map(inv => ({
+    const data = invoices.slice(0, 5).map((inv) => ({
       invoice: inv.invoiceNumber,
       customer: inv.customerName,
       amount: `₹${inv.total.toLocaleString()}`,
@@ -186,13 +204,13 @@ export default function AdminDashboard() {
     }));
 
     if (invoiceStatus === "all") return data;
-    return data.filter(inv => inv.status.toLowerCase() === invoiceStatus);
+    return data.filter((inv) => inv.status.toLowerCase() === invoiceStatus);
   }, [invoices, invoiceStatus]);
 
   const kpiCards = useMemo(() => {
     const totalRevenue = invoices.reduce((sum, inv) => sum + inv.total, 0);
     const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-    
+
     const formatValue = (val: number) => {
       if (val >= 100000) return `₹${(val / 100000).toFixed(1)}L`;
       if (val >= 1000) return `₹${(val / 1000).toFixed(1)}K`;
@@ -242,14 +260,25 @@ export default function AdminDashboard() {
   const healthMetrics = useMemo(() => {
     const totalRevenue = invoices.reduce((sum, inv) => sum + inv.total, 0);
     const revenueTarget = 1000000; // 10L Target
-    const revenueProgress = Math.min(Math.round((totalRevenue / revenueTarget) * 100), 100);
+    const revenueProgress = Math.min(
+      Math.round((totalRevenue / revenueTarget) * 100),
+      100,
+    );
 
-    const inStockProducts = products.filter(p => p.status === "In Stock").length;
-    const stockProgress = products.length > 0 ? Math.round((inStockProducts / products.length) * 100) : 0;
+    const inStockProducts = products.filter(
+      (p) => p.status === "In Stock",
+    ).length;
+    const stockProgress =
+      products.length > 0
+        ? Math.round((inStockProducts / products.length) * 100)
+        : 0;
 
     const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
     const budget = 500000; // 5L Budget
-    const expenseProgress = Math.min(Math.round((totalExpenses / budget) * 100), 100);
+    const expenseProgress = Math.min(
+      Math.round((totalExpenses / budget) * 100),
+      100,
+    );
 
     return [
       {
@@ -277,8 +306,12 @@ export default function AdminDashboard() {
   }, [invoices, products, expenses]);
 
   const activitiesData = useMemo(() => {
-    return logs.slice(0, 4).map(log => ({
-      title: log.action.charAt(0) + log.action.slice(1).toLowerCase() + " " + log.entity.toLowerCase(),
+    return logs.slice(0, 4).map((log) => ({
+      title:
+        log.action.charAt(0) +
+        log.action.slice(1).toLowerCase() +
+        " " +
+        log.entity.toLowerCase(),
       description: log.details,
       time: log.timestamp,
     }));
@@ -286,7 +319,9 @@ export default function AdminDashboard() {
 
   const filterLabel = useMemo(() => {
     const unit =
-      businessUnit === "all" ? "All Business Units" : businessUnit.toUpperCase();
+      businessUnit === "all"
+        ? "All Business Units"
+        : businessUnit.toUpperCase();
 
     const status =
       invoiceStatus === "all" ? "All Invoice Status" : invoiceStatus;
@@ -312,7 +347,9 @@ export default function AdminDashboard() {
                 <Badge className="rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/40">
                   ERP Overview
                 </Badge>
-                <span className="text-sm text-slate-500 dark:text-slate-400">{filterLabel}</span>
+                <span className="text-sm text-slate-500 dark:text-slate-400">
+                  {filterLabel}
+                </span>
               </div>
 
               <h1 className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 md:text-4xl">
@@ -359,412 +396,456 @@ export default function AdminDashboard() {
       </motion.section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {kpiCards.map((card, index) => (
-            <motion.div
-              key={card.title}
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.45, delay: index * 0.08 }}
-            >
-              <KpiCard {...card} />
-            </motion.div>
-          ))}
-        </section>
-
-        <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr] min-w-0">
+        {kpiCards.map((card, index) => (
           <motion.div
-            initial={{ opacity: 0, y: 14 }}
+            key={card.title}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.15 }}
-            className="min-w-0"
+            transition={{ duration: 0.45, delay: index * 0.08 }}
           >
-            <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
-              <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <CardTitle className="text-xl text-slate-950 dark:text-slate-50">Revenue vs Expenses</CardTitle>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Monthly financial performance overview.
-                  </p>
-                </div>
-
-                <Tabs value={period} onValueChange={setPeriod}>
-                  <TabsList className="rounded-xl bg-slate-100 dark:bg-slate-800">
-                    <TabsTrigger value="weekly">Weekly</TabsTrigger>
-                    <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                    <TabsTrigger value="yearly">Yearly</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </CardHeader>
-
-              <CardContent>
-                <ChartContainer
-                  config={revenueChartConfig}
-                  className="h-[330px] w-full"
-                >
-                  <AreaChart data={revenueData} margin={{ left: -10, right: 10, top: 10, bottom: 0 }}>
-                    <defs>
-                      <linearGradient
-                        id="fillRevenue"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="5%"
-                          stopColor="var(--color-revenue)"
-                          stopOpacity={0.35}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor="var(--color-revenue)"
-                          stopOpacity={0.02}
-                        />
-                      </linearGradient>
-
-                      <linearGradient
-                        id="fillExpense"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="5%"
-                          stopColor="var(--color-expense)"
-                          stopOpacity={0.3}
-                        />
-                        <stop
-                          offset="95%"
-                          stopColor="var(--color-expense)"
-                          stopOpacity={0.02}
-                        />
-                      </linearGradient>
-                    </defs>
-
-                    <CartesianGrid vertical={false} strokeDasharray="4 4" />
-                    <XAxis
-                      dataKey="month"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={10}
-                    />
-                    <YAxis
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={10}
-                      tickFormatter={(value) => `₹${Number(value) / 1000}k`}
-                    />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Area
-                      dataKey="revenue"
-                      type="monotone"
-                      fill="url(#fillRevenue)"
-                      stroke="var(--color-revenue)"
-                      strokeWidth={3}
-                    />
-                    <Area
-                      dataKey="expense"
-                      type="monotone"
-                      fill="url(#fillExpense)"
-                      stroke="var(--color-expense)"
-                      strokeWidth={3}
-                    />
-                  </AreaChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
+            <KpiCard {...card} />
           </motion.div>
+        ))}
+      </section>
 
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.2 }}
-            className="min-w-0"
-          >
-            <Card className="h-full rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-xl text-slate-950 dark:text-slate-50">Invoice Status</CardTitle>
+      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr] min-w-0">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.15 }}
+          className="min-w-0"
+        >
+          <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
+            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="text-xl text-slate-950 dark:text-slate-50">
+                  Revenue vs Expenses
+                </CardTitle>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Payment distribution by status.
+                  Monthly financial performance overview.
                 </p>
-              </CardHeader>
+              </div>
 
-              <CardContent>
-                <ChartContainer
-                  config={invoiceChartConfig}
-                  className="mx-auto h-[260px] w-full"
+              <Tabs value={period} onValueChange={setPeriod}>
+                <TabsList className="rounded-xl bg-slate-100 dark:bg-slate-800">
+                  <TabsTrigger value="weekly">Weekly</TabsTrigger>
+                  <TabsTrigger value="monthly">Monthly</TabsTrigger>
+                  <TabsTrigger value="yearly">Yearly</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </CardHeader>
+
+            <CardContent>
+              <ChartContainer
+                config={revenueChartConfig}
+                className="h-[330px] w-full"
+              >
+                <AreaChart
+                  data={revenueData}
+                  margin={{ left: -10, right: 10, top: 10, bottom: 0 }}
                 >
-                  <PieChart>
-                    <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                    <Pie
-                      data={invoiceStatusData}
-                      dataKey="value"
-                      nameKey="name"
-                      innerRadius={65}
-                      outerRadius={92}
-                      paddingAngle={3}
+                  <defs>
+                    <linearGradient
+                      id="fillRevenue"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
                     >
-                      {invoiceStatusData.map((entry) => (
-                        <Cell key={entry.name} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ChartContainer>
+                      <stop
+                        offset="5%"
+                        stopColor="var(--color-revenue)"
+                        stopOpacity={0.35}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--color-revenue)"
+                        stopOpacity={0.02}
+                      />
+                    </linearGradient>
 
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  {invoiceStatusData.map((item) => (
-                    <div
-                      key={item.name}
-                      className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-3"
+                    <linearGradient
+                      id="fillExpense"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
                     >
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: item.fill }}
-                        />
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                          {item.name}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">
-                        {item.value}%
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </section>
+                      <stop
+                        offset="5%"
+                        stopColor="var(--color-expense)"
+                        stopOpacity={0.3}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--color-expense)"
+                        stopOpacity={0.02}
+                      />
+                    </linearGradient>
+                  </defs>
 
-        <section className="grid gap-6 xl:grid-cols-[0.75fr_1.25fr] min-w-0">
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.25 }}
-            className="min-w-0"
-          >
-            <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-xl text-slate-950 dark:text-slate-50">Product Stock</CardTitle>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Inventory quantity by category.
-                </p>
-              </CardHeader>
-
-              <CardContent>
-                <ChartContainer
-                  config={productChartConfig}
-                  className="h-[280px] w-full"
-                >
-                  <BarChart data={productStockData} margin={{ left: -10, right: 10, top: 10, bottom: 0 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="4 4" />
-                    <XAxis
-                      dataKey="category"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={10}
-                    />
-                    <YAxis tickLine={false} axisLine={false} tickMargin={10} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar
-                      dataKey="stock"
-                      fill="var(--color-stock)"
-                      radius={[10, 10, 0, 0]}
-                    />
-                  </BarChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.3 }}
-            className="min-w-0"
-          >
-            <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-xl text-slate-950 dark:text-slate-50">Recent Invoices</CardTitle>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Latest customer invoice records.
-                  </p>
-                </div>
-
-                <Button variant="outline" className="rounded-xl border-slate-200 dark:border-slate-800">
-                  View All
-                </Button>
-              </CardHeader>
-
-              <CardContent>
-                {/* Desktop View Table */}
-                <div className="hidden md:block overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-slate-50 dark:bg-slate-900/50">
-                        <TableHead className="text-slate-500 dark:text-slate-400">Invoice</TableHead>
-                        <TableHead className="text-slate-500 dark:text-slate-400">Customer</TableHead>
-                        <TableHead className="text-slate-500 dark:text-slate-400">Amount</TableHead>
-                        <TableHead className="text-slate-500 dark:text-slate-400">Status</TableHead>
-                        <TableHead className="text-slate-500 dark:text-slate-400">Date</TableHead>
-                      </TableRow>
-                    </TableHeader>
-
-                    <TableBody>
-                      {recentInvoicesData.map((invoice) => (
-                        <TableRow key={invoice.invoice} className="border-slate-200 dark:border-slate-800">
-                          <TableCell className="font-medium text-slate-950 dark:text-slate-50">
-                            {invoice.invoice}
-                          </TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-400">{invoice.customer}</TableCell>
-                          <TableCell className="text-slate-600 dark:text-slate-400">{invoice.amount}</TableCell>
-                          <TableCell>
-                            <StatusBadge status={invoice.status} />
-                          </TableCell>
-                          <TableCell className="text-slate-500 dark:text-slate-400">
-                            {invoice.date}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-
-                      {recentInvoicesData.length === 0 && (
-                        <TableRow>
-                          <TableCell
-                            colSpan={5}
-                            className="h-28 text-center text-slate-500"
-                          >
-                            No invoices found for selected filter.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                {/* Mobile View Card List */}
-                <div className="block md:hidden space-y-3">
-                  {recentInvoicesData.map((invoice) => (
-                    <div
-                      key={invoice.invoice}
-                      className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10 p-4 space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-950 dark:text-slate-50">
-                          {invoice.invoice}
-                        </span>
-                        <StatusBadge status={invoice.status} />
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-500 dark:text-slate-400">Customer:</span>
-                        <span className="font-medium text-slate-700 dark:text-slate-300">
-                          {invoice.customer}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-slate-500 dark:text-slate-400">Amount:</span>
-                        <span className="font-semibold text-slate-900 dark:text-slate-100">
-                          {invoice.amount}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-800/80 pt-2">
-                        <span>Date:</span>
-                        <span>{invoice.date}</span>
-                      </div>
-                    </div>
-                  ))}
-
-                  {recentInvoicesData.length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-8 text-center text-sm text-slate-500">
-                      No invoices found for selected filter.
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </section>
-
-        <section className="grid gap-6 xl:grid-cols-3 min-w-0">
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.35 }}
-            className="xl:col-span-2 min-w-0"
-          >
-            <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-xl text-slate-950 dark:text-slate-50">Business Health</CardTitle>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Quick operational progress indicators.
-                </p>
-              </CardHeader>
-
-              <CardContent className="grid gap-5 md:grid-cols-3">
-                {healthMetrics.map((metric, index) => (
-                  <HealthMetric
-                    key={index}
-                    icon={metric.icon}
-                    title={metric.title}
-                    value={metric.value}
-                    progress={metric.progress}
-                    description={metric.description}
+                  <CartesianGrid vertical={false} strokeDasharray="4 4" />
+                  <XAxis
+                    dataKey="month"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={10}
                   />
-                ))}
-              </CardContent>
-            </Card>
-          </motion.div>
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={10}
+                    tickFormatter={(value) => `₹${Number(value) / 1000}k`}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Area
+                    dataKey="revenue"
+                    type="monotone"
+                    fill="url(#fillRevenue)"
+                    stroke="var(--color-revenue)"
+                    strokeWidth={3}
+                  />
+                  <Area
+                    dataKey="expense"
+                    type="monotone"
+                    fill="url(#fillExpense)"
+                    stroke="var(--color-expense)"
+                    strokeWidth={3}
+                  />
+                </AreaChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.45, delay: 0.4 }}
-            className="min-w-0"
-          >
-            <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-xl text-slate-950 dark:text-slate-50">Recent Activity</CardTitle>
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Latest system updates.
-                </p>
-              </CardHeader>
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.2 }}
+          className="min-w-0"
+        >
+          <Card className="h-full rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl text-slate-950 dark:text-slate-50">
+                Invoice Status
+              </CardTitle>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Payment distribution by status.
+              </p>
+            </CardHeader>
 
-              <CardContent className="space-y-4">
-                {activitiesData.map((activity, index) => (
-                  <div key={index} className="flex gap-3">
-                    <div className="flex flex-col items-center">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
-                        <CalendarDays className="h-4 w-4" />
-                      </div>
+            <CardContent>
+              <ChartContainer
+                config={invoiceChartConfig}
+                className="mx-auto h-[260px] w-full"
+              >
+                <PieChart>
+                  <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                  <Pie
+                    data={invoiceStatusData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={65}
+                    outerRadius={92}
+                    paddingAngle={3}
+                  >
+                    {invoiceStatusData.map((entry) => (
+                      <Cell key={entry.name} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
 
-                      {index !== activitiesData.length - 1 && (
-                        <div className="mt-2 h-full w-px bg-slate-200 dark:bg-slate-800" />
-                      )}
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                {invoiceStatusData.map((item) => (
+                  <div
+                    key={item.name}
+                    className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-3"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: item.fill }}
+                      />
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {item.name}
+                      </span>
                     </div>
+                    <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">
+                      {item.value}%
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </section>
 
-                    <div className="pb-3">
-                      <p className="text-sm font-semibold text-slate-950 dark:text-slate-100">
-                        {activity.title}
-                      </p>
-                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                        {activity.description}
-                      </p>
-                      <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                        {activity.time}
-                      </p>
+      <section className="grid gap-6 xl:grid-cols-[0.75fr_1.25fr] min-w-0">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.25 }}
+          className="min-w-0"
+        >
+          <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl text-slate-950 dark:text-slate-50">
+                Product Stock
+              </CardTitle>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Inventory quantity by category.
+              </p>
+            </CardHeader>
+
+            <CardContent>
+              <ChartContainer
+                config={productChartConfig}
+                className="h-[280px] w-full"
+              >
+                <BarChart
+                  data={productStockData}
+                  margin={{ left: -10, right: 10, top: 10, bottom: 0 }}
+                >
+                  <CartesianGrid vertical={false} strokeDasharray="4 4" />
+                  <XAxis
+                    dataKey="category"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={10}
+                  />
+                  <YAxis tickLine={false} axisLine={false} tickMargin={10} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar
+                    dataKey="stock"
+                    fill="var(--color-stock)"
+                    radius={[10, 10, 0, 0]}
+                  />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.3 }}
+          className="min-w-0"
+        >
+          <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-xl text-slate-950 dark:text-slate-50">
+                  Recent Invoices
+                </CardTitle>
+                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                  Latest customer invoice records.
+                </p>
+              </div>
+
+              <Button
+                variant="outline"
+                className="rounded-xl border-slate-200 dark:border-slate-800"
+              >
+                View All
+              </Button>
+            </CardHeader>
+
+            <CardContent>
+              {/* Desktop View Table */}
+              <div className="hidden md:block overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-slate-50 dark:bg-slate-900/50">
+                      <TableHead className="text-slate-500 dark:text-slate-400">
+                        Invoice
+                      </TableHead>
+                      <TableHead className="text-slate-500 dark:text-slate-400">
+                        Customer
+                      </TableHead>
+                      <TableHead className="text-slate-500 dark:text-slate-400">
+                        Amount
+                      </TableHead>
+                      <TableHead className="text-slate-500 dark:text-slate-400">
+                        Status
+                      </TableHead>
+                      <TableHead className="text-slate-500 dark:text-slate-400">
+                        Date
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+
+                  <TableBody>
+                    {recentInvoicesData.map((invoice) => (
+                      <TableRow
+                        key={invoice.invoice}
+                        className="border-slate-200 dark:border-slate-800"
+                      >
+                        <TableCell className="font-medium text-slate-950 dark:text-slate-50">
+                          {invoice.invoice}
+                        </TableCell>
+                        <TableCell className="text-slate-600 dark:text-slate-400">
+                          {invoice.customer}
+                        </TableCell>
+                        <TableCell className="text-slate-600 dark:text-slate-400">
+                          {invoice.amount}
+                        </TableCell>
+                        <TableCell>
+                          <StatusBadge status={invoice.status} />
+                        </TableCell>
+                        <TableCell className="text-slate-500 dark:text-slate-400">
+                          {invoice.date}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+
+                    {recentInvoicesData.length === 0 && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={5}
+                          className="h-28 text-center text-slate-500"
+                        >
+                          No invoices found for selected filter.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile View Card List */}
+              <div className="block md:hidden space-y-3">
+                {recentInvoicesData.map((invoice) => (
+                  <div
+                    key={invoice.invoice}
+                    className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/10 p-4 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-slate-950 dark:text-slate-50">
+                        {invoice.invoice}
+                      </span>
+                      <StatusBadge status={invoice.status} />
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500 dark:text-slate-400">
+                        Customer:
+                      </span>
+                      <span className="font-medium text-slate-700 dark:text-slate-300">
+                        {invoice.customer}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-slate-500 dark:text-slate-400">
+                        Amount:
+                      </span>
+                      <span className="font-semibold text-slate-900 dark:text-slate-100">
+                        {invoice.amount}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs text-slate-400 dark:text-slate-500 border-t border-slate-100 dark:border-slate-800/80 pt-2">
+                      <span>Date:</span>
+                      <span>{invoice.date}</span>
                     </div>
                   </div>
                 ))}
-                {activitiesData.length === 0 && (
-                  <p className="text-center text-sm text-slate-500 py-8">No recent activity</p>
+
+                {recentInvoicesData.length === 0 && (
+                  <div className="rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 p-8 text-center text-sm text-slate-500">
+                    No invoices found for selected filter.
+                  </div>
                 )}
-              </CardContent>
-            </Card>
-          </motion.div>
-        </section>
-      </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-3 min-w-0">
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.35 }}
+          className="xl:col-span-2 min-w-0"
+        >
+          <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl text-slate-950 dark:text-slate-50">
+                Business Health
+              </CardTitle>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Quick operational progress indicators.
+              </p>
+            </CardHeader>
+
+            <CardContent className="grid gap-5 md:grid-cols-3">
+              {healthMetrics.map((metric, index) => (
+                <HealthMetric
+                  key={index}
+                  icon={metric.icon}
+                  title={metric.title}
+                  value={metric.value}
+                  progress={metric.progress}
+                  description={metric.description}
+                />
+              ))}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.4 }}
+          className="min-w-0"
+        >
+          <Card className="rounded-[2rem] border-slate-200 dark:border-slate-800 bg-white dark:bg-card shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-xl text-slate-950 dark:text-slate-50">
+                Recent Activity
+              </CardTitle>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Latest system updates.
+              </p>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              {activitiesData.map((activity, index) => (
+                <div key={index} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                      <CalendarDays className="h-4 w-4" />
+                    </div>
+
+                    {index !== activitiesData.length - 1 && (
+                      <div className="mt-2 h-full w-px bg-slate-200 dark:bg-slate-800" />
+                    )}
+                  </div>
+
+                  <div className="pb-3">
+                    <p className="text-sm font-semibold text-slate-950 dark:text-slate-100">
+                      {activity.title}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                      {activity.description}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                      {activity.time}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {activitiesData.length === 0 && (
+                <p className="text-center text-sm text-slate-500 py-8">
+                  No recent activity
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+      </section>
+    </div>
   );
 }
 
@@ -824,7 +905,9 @@ function KpiCard({
           <h3 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
             {value}
           </h3>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{description}</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            {description}
+          </p>
         </div>
       </CardContent>
     </Card>
@@ -872,15 +955,24 @@ function HealthMetric({
           <Icon className="h-5 w-5" />
         </div>
 
-        <span className="text-2xl font-semibold text-slate-950 dark:text-slate-50">{value}</span>
+        <span className="text-2xl font-semibold text-slate-950 dark:text-slate-50">
+          {value}
+        </span>
       </div>
 
       <div className="mt-5">
-        <p className="font-medium text-slate-950 dark:text-slate-100">{title}</p>
-        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{description}</p>
+        <p className="font-medium text-slate-950 dark:text-slate-100">
+          {title}
+        </p>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+          {description}
+        </p>
       </div>
 
-      <Progress value={progress} className="mt-5 h-2 bg-slate-200 dark:bg-slate-800" />
+      <Progress
+        value={progress}
+        className="mt-5 h-2 bg-slate-200 dark:bg-slate-800"
+      />
     </div>
   );
 }

@@ -17,7 +17,13 @@ import {
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAppRoutes } from "@/context/RouteContext";
 import { generateNavbarMenu } from "@/routes/utils";
-import { LayoutDashboard, Settings, LogOut, ChevronRight, X } from "lucide-react";
+import {
+  LayoutDashboard,
+  Settings,
+  LogOut,
+  ChevronRight,
+  X,
+} from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { useState } from "react";
 import { useAuthStore } from "@/store/authStore";
@@ -29,7 +35,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const routes = useAppRoutes();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
-    "Users": true // Default open Users for now as per design
+    Users: true, // Default open Users for now as per design
   });
   const { isMobile, setOpenMobile } = useSidebar();
 
@@ -43,11 +49,15 @@ export function AppSidebar() {
   const rolePrefix = location.pathname.split("/")[1] || "admin";
 
   const toggleMenu = (label: string) => {
-    setOpenMenus(prev => ({ ...prev, [label]: !prev[label] }));
+    setOpenMenus((prev) => ({ ...prev, [label]: !prev[label] }));
   };
-  
+
   // We use the helper function to build the menu structure from the actual routes
-  const allMenuGroups = generateNavbarMenu(routes, location.pathname);
+  const allMenuGroups = generateNavbarMenu(
+    routes,
+    location.pathname,
+    user?.role,
+  );
 
   // Filter menu groups based on the current URL prefix to isolate sections
   const menuGroups = allMenuGroups.filter((group) => {
@@ -66,10 +76,12 @@ export function AppSidebar() {
             <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm ring-1 ring-blue-400/20">
               <span className="font-bold text-xs">ERP</span>
             </div>
-            <span className="font-bold tracking-tight text-slate-900 dark:text-slate-100">Management</span>
+            <span className="font-bold tracking-tight text-slate-900 dark:text-slate-100">
+              Management
+            </span>
           </div>
           {isMobile && (
-            <button 
+            <button
               onClick={() => setOpenMobile(false)}
               className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
               aria-label="Close Sidebar"
@@ -81,7 +93,10 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         {menuGroups.map((group) => {
-          const Icon = typeof group.icon === "string" ? LayoutDashboard : (group.icon || LayoutDashboard);
+          const Icon =
+            typeof group.icon === "string"
+              ? LayoutDashboard
+              : group.icon || LayoutDashboard;
           return (
             <SidebarGroup key={group.label}>
               <SidebarGroupLabel className="flex items-center gap-2">
@@ -91,33 +106,43 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu className="gap-1.5">
                   {group.submenus?.map((item) => {
-                    const hasSubmenus = item.submenus && item.submenus.length > 0;
+                    const hasSubmenus =
+                      item.submenus && item.submenus.length > 0;
                     const isOpen = openMenus[item.label];
                     const isActive = location.pathname.startsWith(item.link);
 
                     if (hasSubmenus) {
                       return (
                         <SidebarMenuItem key={item.label}>
-                          <SidebarMenuButton 
+                          <SidebarMenuButton
                             onClick={() => toggleMenu(item.label)}
                             className={`
                               h-11 px-4 transition-all duration-200 rounded-lg group
-                              ${isActive && !isOpen
-                                ? "!bg-blue-600 !text-white shadow-md" 
-                                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              ${
+                                isActive && !isOpen
+                                  ? "!bg-blue-600 !text-white shadow-md"
+                                  : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                               }
                             `}
                           >
                             <div className="flex items-center gap-3 w-full">
                               {item.icon ? (
-                                <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                                <item.icon
+                                  size={20}
+                                  strokeWidth={isActive ? 2.5 : 2}
+                                />
                               ) : (
-                                <LayoutDashboard size={20} strokeWidth={isActive ? 2.5 : 2} />
+                                <LayoutDashboard
+                                  size={20}
+                                  strokeWidth={isActive ? 2.5 : 2}
+                                />
                               )}
-                              <span className="font-bold text-[15px] flex-1">{item.label}</span>
-                              <ChevronRight 
-                                size={16} 
-                                className={`transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`} 
+                              <span className="font-bold text-[15px] flex-1">
+                                {item.label}
+                              </span>
+                              <ChevronRight
+                                size={16}
+                                className={`transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`}
                               />
                             </div>
                           </SidebarMenuButton>
@@ -125,18 +150,24 @@ export function AppSidebar() {
                             <SidebarMenuSub className="mt-1 ml-6 border-l-2 border-slate-200 dark:border-slate-800 gap-1">
                               {item.submenus?.map((sub) => (
                                 <SidebarMenuSubItem key={sub.label}>
-                                  <SidebarMenuSubButton 
-                                    asChild 
+                                  <SidebarMenuSubButton
+                                    asChild
                                     isActive={location.pathname === sub.link}
                                     className={`
                                       h-10 px-3 transition-all duration-200 rounded-md
-                                      ${location.pathname === sub.link 
-                                        ? "text-blue-600 dark:text-blue-400 font-bold !bg-transparent" 
-                                        : "text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
+                                      ${
+                                        location.pathname === sub.link
+                                          ? "text-blue-600 dark:text-blue-400 font-bold !bg-transparent"
+                                          : "text-slate-500 dark:text-slate-500 hover:text-slate-900 dark:hover:text-slate-100"
                                       }
                                     `}
                                   >
-                                    <Link to={sub.link} onClick={handleMobileClose}>{sub.label}</Link>
+                                    <Link
+                                      to={sub.link}
+                                      onClick={handleMobileClose}
+                                    >
+                                      {sub.label}
+                                    </Link>
                                   </SidebarMenuSubButton>
                                 </SidebarMenuSubItem>
                               ))}
@@ -148,24 +179,41 @@ export function AppSidebar() {
 
                     return (
                       <SidebarMenuItem key={item.label}>
-                        <SidebarMenuButton 
-                          asChild 
+                        <SidebarMenuButton
+                          asChild
                           isActive={location.pathname === item.link}
                           className={`
                             h-11 px-4 transition-all duration-200 rounded-lg
-                            ${location.pathname === item.link 
-                              ? "!bg-blue-600 !text-white shadow-md hover:!bg-blue-700" 
-                              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
+                            ${
+                              location.pathname === item.link
+                                ? "!bg-blue-600 !text-white shadow-md hover:!bg-blue-700"
+                                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
                             }
                           `}
                         >
-                          <Link to={item.link} onClick={handleMobileClose} className="flex items-center gap-3">
+                          <Link
+                            to={item.link}
+                            onClick={handleMobileClose}
+                            className="flex items-center gap-3"
+                          >
                             {item.icon ? (
-                              <item.icon size={20} strokeWidth={location.pathname === item.link ? 2.5 : 2} />
+                              <item.icon
+                                size={20}
+                                strokeWidth={
+                                  location.pathname === item.link ? 2.5 : 2
+                                }
+                              />
                             ) : (
-                              <LayoutDashboard size={20} strokeWidth={location.pathname === item.link ? 2.5 : 2} />
+                              <LayoutDashboard
+                                size={20}
+                                strokeWidth={
+                                  location.pathname === item.link ? 2.5 : 2
+                                }
+                              />
                             )}
-                            <span className="font-bold text-[15px]">{item.label}</span>
+                            <span className="font-bold text-[15px]">
+                              {item.label}
+                            </span>
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -173,20 +221,32 @@ export function AppSidebar() {
                   })}
                   {group.link && (
                     <SidebarMenuItem key={group.label}>
-                      <SidebarMenuButton 
-                        asChild 
+                      <SidebarMenuButton
+                        asChild
                         isActive={location.pathname === group.link}
                         className={`
                           h-11 px-4 transition-all duration-200 rounded-lg
-                          ${location.pathname === group.link 
-                            ? "!bg-blue-600 !text-white shadow-md hover:!bg-blue-700" 
-                            : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
+                          ${
+                            location.pathname === group.link
+                              ? "!bg-blue-600 !text-white shadow-md hover:!bg-blue-700"
+                              : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100"
                           }
                         `}
                       >
-                        <Link to={group.link} onClick={handleMobileClose} className="flex items-center gap-3">
-                          <Icon size={20} strokeWidth={location.pathname === group.link ? 2.5 : 2} />
-                          <span className="font-bold text-[15px]">{group.label}</span>
+                        <Link
+                          to={group.link}
+                          onClick={handleMobileClose}
+                          className="flex items-center gap-3"
+                        >
+                          <Icon
+                            size={20}
+                            strokeWidth={
+                              location.pathname === group.link ? 2.5 : 2
+                            }
+                          />
+                          <span className="font-bold text-[15px]">
+                            {group.label}
+                          </span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -208,17 +268,20 @@ export function AppSidebar() {
                   <ThemeToggle />
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => {
                   handleMobileClose();
                   navigate(`/${rolePrefix}/settings`);
                 }}
                 className="w-full flex items-center gap-3 px-2 py-1.5 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md transition-colors group/item text-slate-700 dark:text-slate-300"
               >
-                <Settings size={16} className="text-slate-400 dark:text-slate-500 group-hover/item:text-slate-600 dark:group-hover/item:text-slate-300" />
+                <Settings
+                  size={16}
+                  className="text-slate-400 dark:text-slate-500 group-hover/item:text-slate-600 dark:group-hover/item:text-slate-300"
+                />
                 <span className="font-medium">Settings</span>
               </button>
-              <button 
+              <button
                 onClick={() => {
                   handleMobileClose();
                   logout();
@@ -226,7 +289,10 @@ export function AppSidebar() {
                 }}
                 className="w-full flex items-center gap-3 px-2 py-1.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors group/item"
               >
-                <LogOut size={16} className="text-red-400 group-hover/item:text-red-600" />
+                <LogOut
+                  size={16}
+                  className="text-red-400 group-hover/item:text-red-600"
+                />
                 <span className="font-medium">Logout</span>
               </button>
             </div>
@@ -236,19 +302,28 @@ export function AppSidebar() {
           <div className="flex items-center gap-3 px-1 py-2 cursor-pointer rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
             <div className="relative">
               <div className="size-10 rounded-full overflow-hidden border-2 border-background shadow-sm ring-1 ring-border">
-                <img 
-                  src={user?.photo || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop"} 
-                  alt={user?.name || "User"} 
-                  className="size-full object-cover" 
+                <img
+                  src={
+                    user?.photo ||
+                    "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop"
+                  }
+                  alt={user?.name || "User"}
+                  className="size-full object-cover"
                 />
               </div>
               <div className="absolute bottom-0 right-0 size-2.5 bg-green-500 rounded-full border-2 border-background"></div>
             </div>
             <div className="flex flex-col overflow-hidden">
-              <span className="text-sm font-bold leading-tight truncate text-slate-900 dark:text-slate-100">{user?.name || "System User"}</span>
+              <span className="text-sm font-bold leading-tight truncate text-slate-900 dark:text-slate-100">
+                {user?.name || "System User"}
+              </span>
               <div className="flex gap-1 mt-1">
-                <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 uppercase tracking-tighter">{user?.role || "User"}</span>
-                <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 uppercase tracking-tighter">Verified</span>
+                <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 uppercase tracking-tighter">
+                  {user?.role || "User"}
+                </span>
+                <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 uppercase tracking-tighter">
+                  Verified
+                </span>
               </div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useInvoiceStore } from "@/store/invoiceStore";
+import { useAuthStore } from "@/store/authStore";
 import { 
   ChevronLeft, 
   Download, 
@@ -38,6 +39,8 @@ import { motion } from "framer-motion";
 export default function InvoiceDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const rolePrefix = user?.role.toLowerCase() || "admin";
   const { getInvoiceById, markInvoiceAsPaid } = useInvoiceStore();
   const invoice = getInvoiceById(id || "");
 
@@ -53,7 +56,7 @@ export default function InvoiceDetails() {
         </motion.div>
         <h2 className="text-2xl font-bold">Invoice Not Found</h2>
         <p className="text-muted-foreground text-center max-w-xs">The invoice you are looking for does not exist or has been deleted.</p>
-        <Button onClick={() => navigate("/admin/invoices")} className="rounded-xl px-8">
+        <Button onClick={() => navigate(`/${rolePrefix}/invoices`)} className="rounded-xl px-8">
           <ChevronLeft className="mr-2 h-4 w-4" />
           Back to Invoices
         </Button>
@@ -96,7 +99,7 @@ export default function InvoiceDetails() {
           <Button 
             variant="ghost" 
             size="sm"
-            onClick={() => navigate("/admin/invoices")}
+            onClick={() => navigate(`/${rolePrefix}/invoices`)}
             className="rounded-xl hover:bg-white dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
           >
             <ChevronLeft className="mr-2 h-4 w-4" />

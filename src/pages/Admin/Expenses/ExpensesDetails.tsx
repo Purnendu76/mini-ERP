@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useExpenseStore } from "@/store/expenseStore";
+import { useAuthStore } from "@/store/authStore";
 import { 
   ChevronLeft, 
   ReceiptText, 
@@ -22,6 +23,8 @@ import { Separator } from "@/components/ui/separator";
 export default function ExpensesDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
+  const rolePrefix = user?.role.toLowerCase() || "admin";
   const { getExpenseById } = useExpenseStore();
   const expense = getExpenseById(id || "");
 
@@ -30,7 +33,7 @@ export default function ExpensesDetails() {
       <div className="flex h-[60vh] flex-col items-center justify-center space-y-4">
         <ReceiptText className="h-12 w-12 text-muted-foreground" />
         <h2 className="text-xl font-semibold">Expense not found</h2>
-        <Button onClick={() => navigate("/admin/expenses")}>
+        <Button onClick={() => navigate(`/${rolePrefix}/expenses`)}>
           <ChevronLeft className="mr-2 h-4 w-4" />
           Back to Expenses
         </Button>
@@ -59,7 +62,7 @@ export default function ExpensesDetails() {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => navigate("/admin/expenses")}
+            onClick={() => navigate(`/${rolePrefix}/expenses`)}
             className="-ml-2 mb-2"
           >
             <ChevronLeft className="mr-2 h-4 w-4" />

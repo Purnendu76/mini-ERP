@@ -9,7 +9,7 @@ const App = () => {
     <ThemeProvider defaultTheme="light" storageKey="erp-theme">
       <RouteProvider routes={appRoutes}>
         <RouterProvider router={appRouter} />
-         <Toaster richColors position="top-right" />
+        <Toaster richColors position="top-right" />
       </RouteProvider>
     </ThemeProvider>
   );

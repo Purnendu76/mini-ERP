@@ -25,7 +25,13 @@ import {
   Loader2,
 } from "lucide-react";
 import * as XLSX from "xlsx";
-import { format, isWithinInterval, startOfDay, endOfDay, parseISO } from "date-fns";
+import {
+  format,
+  isWithinInterval,
+  startOfDay,
+  endOfDay,
+  parseISO,
+} from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
 
@@ -41,12 +47,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -85,6 +86,8 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 
 import { useExpenseStore } from "@/store/expenseStore";
+import { useAuthStore } from "@/store/authStore";
+import { canPerformAction } from "@/config/permissions";
 import type {
   Expense,
   ExpenseCategory,
@@ -150,6 +153,18 @@ const defaultFormValues: ExpenseFormValues = {
 
 export default function Expenses() {
   const navigate = useNavigate();
+  const currentUser = useAuthStore((state) => state.user);
+  const rolePrefix = currentUser?.role.toLowerCase() || "admin";
+  const canCreate = currentUser
+    ? canPerformAction(currentUser.role, "create", "expenses")
+    : false;
+  const canEdit = currentUser
+    ? canPerformAction(currentUser.role, "edit", "expenses")
+    : false;
+  const canDelete = currentUser
+    ? canPerformAction(currentUser.role, "delete", "expenses")
+    : false;
+
   const { expenses, addExpense, updateExpense, deleteExpense } =
     useExpenseStore();
   const [search, setSearch] = useState("");
@@ -169,18 +184,12 @@ export default function Expenses() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [deleteExpenseItem, setDeleteExpenseItem] = useState<Expense | null>(
-    null
+    null,
   );
 
   const pageSize = 6;
 
-  const {
-    register,
-    control,
-    handleSubmit,
-    reset,
-    formState,
-  } = useForm<any>({
+  const { register, control, handleSubmit, reset, formState } = useForm<any>({
     resolver: zodResolver(expenseSchema),
     defaultValues: defaultFormValues,
   });
@@ -198,7 +207,7 @@ export default function Expenses() {
           expense.title.toLowerCase().includes(value) ||
           expense.category.toLowerCase().includes(value) ||
           expense.submittedBy.toLowerCase().includes(value) ||
-          expense.paymentMethod.toLowerCase().includes(value)
+          expense.paymentMethod.toLowerCase().includes(value),
       );
     }
 
@@ -212,7 +221,7 @@ export default function Expenses() {
 
     if (paymentMethodFilter !== "all") {
       data = data.filter(
-        (expense) => expense.paymentMethod === paymentMethodFilter
+        (expense) => expense.paymentMethod === paymentMethodFilter,
       );
     }
 
@@ -220,7 +229,9 @@ export default function Expenses() {
       data = data.filter((expense) => {
         const expDate = parseISO(expense.expenseDate);
         const start = startOfDay(dateRange.from!);
-        const end = dateRange.to ? endOfDay(dateRange.to) : endOfDay(dateRange.from!);
+        const end = dateRange.to
+          ? endOfDay(dateRange.to)
+          : endOfDay(dateRange.from!);
         return isWithinInterval(expDate, { start, end });
       });
     }
@@ -231,30 +242,28 @@ export default function Expenses() {
     if (sortBy === "date-asc") {
       data.sort(
         (a, b) =>
-          new Date(a.expenseDate).getTime() -
-          new Date(b.expenseDate).getTime()
+          new Date(a.expenseDate).getTime() - new Date(b.expenseDate).getTime(),
       );
     }
 
     if (sortBy === "date-desc") {
       data.sort(
         (a, b) =>
-          new Date(b.expenseDate).getTime() -
-          new Date(a.expenseDate).getTime()
+          new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime(),
       );
     }
 
     if (sortBy === "newest") {
       data.sort(
         (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       );
     }
 
     if (sortBy === "oldest") {
       data.sort(
         (a, b) =>
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
       );
     }
 
@@ -277,9 +286,11 @@ export default function Expenses() {
   }, [filteredExpenses, page]);
 
   const totalAmount = expenses.reduce((sum, item) => sum + item.amount, 0);
-  const pendingCount = expenses.filter((item) => item.status === "Pending").length;
+  const pendingCount = expenses.filter(
+    (item) => item.status === "Pending",
+  ).length;
   const approvedCount = expenses.filter(
-    (item) => item.status === "Approved"
+    (item) => item.status === "Approved",
   ).length;
 
   const openAddExpenseForm = () => {
@@ -333,24 +344,27 @@ export default function Expenses() {
   };
 
   const exportToExcel = () => {
-    const dataToExport = expenses.length > 0 ? expenses : [
-      {
-        title: "",
-        category: "",
-        amount: 0,
-        paymentMethod: "",
-        expenseDate: "",
-        submittedBy: "",
-        status: "",
-        createdAt: ""
-      }
-    ];
+    const dataToExport =
+      expenses.length > 0
+        ? expenses
+        : [
+            {
+              title: "",
+              category: "",
+              amount: 0,
+              paymentMethod: "",
+              expenseDate: "",
+              submittedBy: "",
+              status: "",
+              createdAt: "",
+            },
+          ];
 
     setIsExporting(true);
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Expenses");
-    
+
     setTimeout(() => {
       XLSX.writeFile(workbook, "business_expenses.xlsx");
       setIsExporting(false);
@@ -380,7 +394,9 @@ export default function Expenses() {
               category: (item.category as any) || "Other",
               amount: Number(item.amount),
               paymentMethod: (item.paymentMethod as any) || "Cash",
-              expenseDate: String(item.expenseDate || new Date().toISOString().split("T")[0]),
+              expenseDate: String(
+                item.expenseDate || new Date().toISOString().split("T")[0],
+              ),
               submittedBy: String(item.submittedBy || "Unknown"),
               status: (item.status as any) || "Pending",
             });
@@ -449,20 +465,24 @@ export default function Expenses() {
                 className="hidden"
                 onChange={importFromExcel}
               />
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isImporting}
-                className="h-10 rounded-xl border-blue-200 bg-blue-50/50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-400"
-                onClick={() => document.getElementById("expense-import")?.click()}
-              >
-                {isImporting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="mr-2 h-4 w-4" />
-                )}
-                {isImporting ? "Importing..." : "Import"}
-              </Button>
+              {canCreate && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isImporting}
+                  className="h-10 rounded-xl border-blue-200 bg-blue-50/50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-400"
+                  onClick={() =>
+                    document.getElementById("expense-import")?.click()
+                  }
+                >
+                  {isImporting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="mr-2 h-4 w-4" />
+                  )}
+                  {isImporting ? "Importing..." : "Import"}
+                </Button>
+              )}
 
               <Button
                 type="button"
@@ -479,14 +499,16 @@ export default function Expenses() {
                 {isExporting ? "Exporting..." : "Export"}
               </Button>
 
-              <Button
-                type="button"
-                onClick={openAddExpenseForm}
-                className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Expense
-              </Button>
+              {canCreate && (
+                <Button
+                  type="button"
+                  onClick={openAddExpenseForm}
+                  className="h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Expense
+                </Button>
+              )}
             </div>
           </div>
         </section>
@@ -636,7 +658,7 @@ export default function Expenses() {
                           variant="outline"
                           className={cn(
                             "h-10 justify-start text-left font-normal rounded-xl border-border bg-card",
-                            !dateRange && "text-muted-foreground"
+                            !dateRange && "text-muted-foreground",
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
@@ -654,7 +676,10 @@ export default function Expenses() {
                           )}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 rounded-xl" align="start">
+                      <PopoverContent
+                        className="w-auto p-0 rounded-xl"
+                        align="start"
+                      >
                         <Calendar
                           mode="range"
                           defaultMonth={dateRange?.from}
@@ -677,10 +702,18 @@ export default function Expenses() {
                       <SelectContent>
                         <SelectItem value="newest">Newest First</SelectItem>
                         <SelectItem value="oldest">Oldest First</SelectItem>
-                        <SelectItem value="amount-asc">Amount: Low to High</SelectItem>
-                        <SelectItem value="amount-desc">Amount: High to Low</SelectItem>
-                        <SelectItem value="date-asc">Date: Old to New</SelectItem>
-                        <SelectItem value="date-desc">Date: New to Old</SelectItem>
+                        <SelectItem value="amount-asc">
+                          Amount: Low to High
+                        </SelectItem>
+                        <SelectItem value="amount-desc">
+                          Amount: High to Low
+                        </SelectItem>
+                        <SelectItem value="date-asc">
+                          Date: Old to New
+                        </SelectItem>
+                        <SelectItem value="date-desc">
+                          Date: New to Old
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -717,9 +750,11 @@ export default function Expenses() {
                             <ReceiptText className="h-5 w-5" />
                           </div>
 
-                          <div 
+                          <div
                             className="cursor-pointer group/link"
-                            onClick={() => navigate(`/admin/expenses/${expense.id}`)}
+                            onClick={() =>
+                              navigate(`/${rolePrefix}/expenses/${expense.id}`)
+                            }
                           >
                             <p className="font-bold text-blue-600 dark:text-blue-400 group-hover/link:underline">
                               {expense.title}
@@ -777,26 +812,34 @@ export default function Expenses() {
 
                           <DropdownMenuContent align="end" className="w-36">
                             <DropdownMenuItem
-                              onClick={() => navigate(`/admin/expenses/${expense.id}`)}
+                              onClick={() =>
+                                navigate(
+                                  `/${rolePrefix}/expenses/${expense.id}`,
+                                )
+                              }
                             >
                               <ReceiptText className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
 
-                            <DropdownMenuItem
-                              onClick={() => openEditExpenseForm(expense)}
-                            >
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
+                            {canEdit && (
+                              <DropdownMenuItem
+                                onClick={() => openEditExpenseForm(expense)}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
 
-                            <DropdownMenuItem
-                              className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
-                              onClick={() => setDeleteExpenseItem(expense)}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
+                            {canDelete && (
+                              <DropdownMenuItem
+                                className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+                                onClick={() => setDeleteExpenseItem(expense)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -890,7 +933,10 @@ export default function Expenses() {
                   </div>
                 </FormField>
 
-                <FormField label="Submitted By" error={errors.submittedBy?.message}>
+                <FormField
+                  label="Submitted By"
+                  error={errors.submittedBy?.message}
+                >
                   <div className="relative">
                     <UserRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
                     <Input
@@ -906,7 +952,10 @@ export default function Expenses() {
                     control={control}
                     name="category"
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger className="h-10 rounded-xl bg-muted/20 focus:ring-blue-500/30">
                           <SelectValue placeholder="Select category" />
                         </SelectTrigger>
@@ -930,7 +979,10 @@ export default function Expenses() {
                     control={control}
                     name="paymentMethod"
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger className="h-10 rounded-xl bg-muted/20 focus:ring-blue-500/30">
                           <SelectValue placeholder="Select payment method" />
                         </SelectTrigger>
@@ -958,7 +1010,10 @@ export default function Expenses() {
                   </div>
                 </FormField>
 
-                <FormField label="Expense Date" error={errors.expenseDate?.message}>
+                <FormField
+                  label="Expense Date"
+                  error={errors.expenseDate?.message}
+                >
                   <Controller
                     control={control}
                     name="expenseDate"
@@ -969,7 +1024,7 @@ export default function Expenses() {
                             variant={"outline"}
                             className={cn(
                               "h-10 w-full justify-start rounded-xl bg-muted/20 px-3 text-left font-normal border-input hover:bg-muted/30 focus:ring-blue-500/30",
-                              !field.value && "text-muted-foreground"
+                              !field.value && "text-muted-foreground",
                             )}
                           >
                             <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground/70" />
@@ -980,11 +1035,18 @@ export default function Expenses() {
                             )}
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 rounded-2xl shadow-xl border-border" align="start">
+                        <PopoverContent
+                          className="w-auto p-0 rounded-2xl shadow-xl border-border"
+                          align="start"
+                        >
                           <Calendar
                             mode="single"
-                            selected={field.value ? new Date(field.value) : undefined}
-                            onSelect={(date) => field.onChange(date?.toISOString())}
+                            selected={
+                              field.value ? new Date(field.value) : undefined
+                            }
+                            onSelect={(date) =>
+                              field.onChange(date?.toISOString())
+                            }
                             className="rounded-2xl"
                           />
                         </PopoverContent>
@@ -998,7 +1060,10 @@ export default function Expenses() {
                     control={control}
                     name="status"
                     render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
                         <SelectTrigger className="h-10 rounded-xl bg-muted/20 focus:ring-blue-500/30">
                           <SelectValue placeholder="Select status" />
                         </SelectTrigger>
@@ -1033,8 +1098,8 @@ export default function Expenses() {
                   {isSubmitting
                     ? "Saving..."
                     : editingExpense
-                    ? "Save Changes"
-                    : "Create Expense"}
+                      ? "Save Changes"
+                      : "Create Expense"}
                 </Button>
               </div>
             </form>
@@ -1059,9 +1124,7 @@ export default function Expenses() {
           </AlertDialogHeader>
 
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();

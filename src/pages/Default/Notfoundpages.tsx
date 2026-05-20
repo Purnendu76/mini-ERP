@@ -55,9 +55,9 @@ export default function NotFound() {
             </Button>
 
             <Button asChild className="h-11 rounded-xl bg-blue-600 hover:bg-blue-700">
-              <Link to="/dashboard">
+              <Link to="/login">
                 <Home className="mr-2 h-4 w-4" />
-                Back to dashboard
+                Back to Login
               </Link>
             </Button>
           </div>
