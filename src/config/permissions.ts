@@ -1,4 +1,5 @@
 import type { UserRole } from "@/types/auth.types";
+import { ROLE_PERMISSIONS } from "./roles.config.js";
 
 export type PermissionAction = "create" | "view" | "edit" | "delete";
 export type PermissionModule = "users" | "products" | "invoices" | "expenses" | "profile" | "settings";
@@ -8,25 +9,9 @@ export function canPerformAction(
   action: PermissionAction,
   _module?: PermissionModule
 ): boolean {
-  if (role === "Admin") {
-    return true; // Admin has full access to everything
-  }
-
-  if (role === "Manager") {
-    // Manager has all permissions except delete
-    if (action === "delete"  ) {
-      return false;
-    }
-    return true;
-  }
-
-  if (role === "Staff") {
-    // Staff can only view
-    if (action === "view") {
-      return true;
-    }
+  const permissions = ROLE_PERMISSIONS[role];
+  if (!permissions) {
     return false;
   }
-
-  return false;
+  return permissions[action] ?? false;
 }

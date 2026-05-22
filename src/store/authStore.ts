@@ -1,13 +1,12 @@
 import { create } from "zustand";
 import type { AuthUser, LoginCredentials } from "@/types/auth.types";
-import { getRegisteredUsers } from "@/lib/registeredUsers";
 import {
   clearAuthCookies,
   getAuthToken,
   getAuthUser,
   setAuthCookies,
 } from "@/lib/authCookies";
-import bcrypt from "bcryptjs";
+import { axiosClient } from "@/api/axiosClient";
 
 type AuthStore = {
   user: AuthUser | null;
@@ -15,20 +14,9 @@ type AuthStore = {
   isAuthenticated: boolean;
 
   login: (credentials: LoginCredentials) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
   initializeAuth: () => void;
 };
-
-function generateMockToken(user: AuthUser) {
-  return btoa(
-    JSON.stringify({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      createdAt: new Date().toISOString(),
-    })
-  );
-}
 
 export const useAuthStore = create<AuthStore>((set) => ({
   user: getAuthUser(),
@@ -36,61 +24,44 @@ export const useAuthStore = create<AuthStore>((set) => ({
   isAuthenticated: Boolean(getAuthToken()),
 
   login: async (credentials) => {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    try {
+      const response = await axiosClient.post("/auth/login", {
+        email: credentials.email.trim().toLowerCase(),
+        password: credentials.password.trim(),
+      });
 
-    const registeredUsers = getRegisteredUsers();
-    const email = credentials.email.trim().toLowerCase();
-    
-    const matchedUser = registeredUsers.find(
-      (user) => user.email.trim().toLowerCase() === email
-    );
+      if (response.status === 200 && response.data.token) {
+        const { token, user } = response.data;
+        setAuthCookies(token, user);
 
-    if (!matchedUser) {
+        set({
+          user,
+          token,
+          isAuthenticated: true,
+        });
+
+        return true;
+      }
+      return false;
+    } catch (error) {
       return false;
     }
-
-    // Verify hashed password
-    const isPasswordValid = bcrypt.compareSync(credentials.password.trim(), matchedUser.password);
-
-    if (!isPasswordValid) {
-      return false;
-    }
-
-    if (matchedUser.status !== "Active") {
-      throw new Error("Your account is currently inactive. Please contact your administrator.");
-    }
-
-    const authUser: AuthUser = {
-      id: matchedUser.id,
-      name: matchedUser.name,
-      email: matchedUser.email,
-      role: matchedUser.role,
-      status: matchedUser.status,
-      photo: matchedUser.photo,
-    };
-
-    const token = generateMockToken(authUser);
-
-    setAuthCookies(token, authUser);
-
-    set({
-      user: authUser,
-      token,
-      isAuthenticated: true,
-    });
-
-    return true;
   },
 
-  logout: () => {
-    clearAuthCookies();
+  logout: async () => {
+    try {
+      await axiosClient.post("/auth/logout");
+    } catch (error) {
+      console.error("Backend logout failed:", error);
+    } finally {
+      clearAuthCookies();
 
-    set({
-      user: null,
-      token: undefined,
-      isAuthenticated: false,
-    });
+      set({
+        user: null,
+        token: undefined,
+        isAuthenticated: false,
+      });
+    }
   },
 
   initializeAuth: () => {

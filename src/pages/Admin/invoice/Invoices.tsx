@@ -24,7 +24,7 @@ import {
   Download,
   Loader2,
 } from "lucide-react";
-import * as XLSX from "xlsx";
+import { ImportExportActions } from "@/components/ImportExportActions";
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { cn } from "@/lib/utils";
@@ -162,8 +162,6 @@ export default function Invoices() {
     null,
   );
   const [previewInvoice, setPreviewInvoice] = useState<Invoice | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const pageSize = 6;
@@ -379,101 +377,87 @@ export default function Invoices() {
     setPage(1);
   };
 
-  const exportToExcel = () => {
-    const dataToExport =
-      invoices.length > 0
-        ? invoices.map((inv) => ({
-            ...inv,
-            items: JSON.stringify(inv.items),
-          }))
-        : [
-            {
-              invoiceNumber: "",
-              customerName: "",
-              customerEmail: "",
-              invoiceDate: "",
-              dueDate: "",
-              status: "Pending",
-              taxRate: 18,
-              items: "[]",
-              createdAt: new Date().toISOString(),
-            },
-          ];
-
-    setIsExporting(true);
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Invoices");
-
-    setTimeout(() => {
-      XLSX.writeFile(workbook, "invoices_records.xlsx");
-      setIsExporting(false);
-      toast.success("Invoices exported successfully");
-    }, 800);
+  const getInvoicesExportData = () => {
+    return invoices.length > 0
+      ? invoices.map((inv) => ({
+          "Invoice Number": inv.invoiceNumber,
+          "Customer Name": inv.customerName,
+          "Customer Email": inv.customerEmail,
+          "Invoice Date": inv.invoiceDate
+            ? new Date(inv.invoiceDate).toLocaleDateString()
+            : "",
+          "Due Date": inv.dueDate
+            ? new Date(inv.dueDate).toLocaleDateString()
+            : "",
+          Status: inv.status,
+          "Tax Rate": inv.taxRate,
+          Items: inv.items ? JSON.stringify(inv.items) : "[]",
+          "Created At": inv.createdAt
+            ? new Date(inv.createdAt).toLocaleDateString()
+            : "",
+        }))
+      : [
+          {
+            "Invoice Number": "",
+            "Customer Name": "",
+            "Customer Email": "",
+            "Invoice Date": "",
+            "Due Date": "",
+            Status: "Pending",
+            "Tax Rate": 18,
+            Items: "[]",
+            "Created At": "",
+          },
+        ];
   };
 
-  const importFromExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleImportInvoices = async (json: any[]) => {
+    const importPromises: Promise<boolean>[] = [];
+    json.forEach((item) => {
+      const invoiceNumber = item.invoiceNumber || item["Invoice Number"];
+      const customerName = item.customerName || item["Customer Name"];
+      const customerEmail = item.customerEmail || item["Customer Email"];
+      const invoiceDate = item.invoiceDate || item["Invoice Date"];
+      const dueDate = item.dueDate || item["Due Date"];
+      const status = item.status || item.Status;
+      const taxRate = item.taxRate !== undefined ? item.taxRate : item["Tax Rate"];
+      const itemsRaw = item.items || item.Items;
 
-    setIsImporting(true);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: "binary" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet) as any[];
+      if (invoiceNumber && customerName) {
+        let parsedItems = [];
+        try {
+          parsedItems = itemsRaw ? (typeof itemsRaw === "string" ? JSON.parse(itemsRaw) : itemsRaw) : [];
+        } catch (pErr) {
+          console.warn("Could not parse items for invoice", invoiceNumber);
+        }
 
-        let importedCount = 0;
-
-        json.forEach((item) => {
-          if (item.invoiceNumber && item.customerName) {
-            let parsedItems = [];
-            try {
-              parsedItems = item.items ? JSON.parse(item.items) : [];
-            } catch (pErr) {
-              console.warn(
-                "Could not parse items for invoice",
-                item.invoiceNumber,
-              );
-            }
-
-            addInvoice({
-              invoiceNumber: String(item.invoiceNumber),
-              customerName: String(item.customerName),
-              customerEmail: String(item.customerEmail || ""),
-              invoiceDate: String(
-                item.invoiceDate || new Date().toISOString().split("T")[0],
-              ),
-              dueDate: String(
-                item.dueDate || new Date().toISOString().split("T")[0],
-              ),
-              status: (item.status as any) || "Pending",
-              taxRate: Number(item.taxRate || 18),
-              items: parsedItems,
-            });
-            importedCount++;
-          }
-        });
-
-        setTimeout(() => {
-          setIsImporting(false);
-          toast.success(`Successfully imported ${importedCount} invoices`);
-        }, 1000);
-        event.target.value = "";
-      } catch (error) {
-        setIsImporting(false);
-        toast.error("Failed to import excel file");
-        console.error(error);
+        importPromises.push(
+          addInvoice({
+            invoiceNumber: String(invoiceNumber),
+            customerName: String(customerName),
+            customerEmail: String(customerEmail || ""),
+            invoiceDate: String(
+              invoiceDate || new Date().toISOString().split("T")[0]
+            ),
+            dueDate: String(
+              dueDate || new Date().toISOString().split("T")[0]
+            ),
+            status: (status as any) || "Pending",
+            taxRate: Number(taxRate || 18),
+            items: parsedItems,
+          })
+        );
       }
-    };
-    reader.onerror = () => {
-      setIsImporting(false);
-      toast.error("Failed to read file");
-    };
-    reader.readAsBinaryString(file);
+    });
+
+    const results = await Promise.all(importPromises);
+    const importedCount = results.filter(Boolean).length;
+
+    if (importedCount > 0) {
+      toast.success(`Successfully imported ${importedCount} invoices`);
+    } else {
+      toast.error("No invoices were successfully imported. Please verify data format.");
+    }
   };
 
   return (
@@ -502,46 +486,13 @@ export default function Invoices() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <input
-                type="file"
-                accept=".xlsx, .xls, .csv"
-                id="invoice-import"
-                className="hidden"
-                onChange={importFromExcel}
+              <ImportExportActions
+                exportData={getInvoicesExportData}
+                exportFileName="invoices_records.xlsx"
+                sheetName="Invoices"
+                onImport={handleImportInvoices}
+                showImport={canCreate}
               />
-              {canCreate && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isImporting}
-                  className="h-10 rounded-xl border-blue-200 bg-blue-50/50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-400"
-                  onClick={() =>
-                    document.getElementById("invoice-import")?.click()
-                  }
-                >
-                  {isImporting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Upload className="mr-2 h-4 w-4" />
-                  )}
-                  {isImporting ? "Importing..." : "Import"}
-                </Button>
-              )}
-
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isExporting}
-                className="h-10 rounded-xl border-emerald-200 bg-emerald-50/50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-950/20 dark:text-emerald-400"
-                onClick={exportToExcel}
-              >
-                {isExporting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="mr-2 h-4 w-4" />
-                )}
-                {isExporting ? "Exporting..." : "Export"}
-              </Button>
 
               {canCreate && (
                 <Button

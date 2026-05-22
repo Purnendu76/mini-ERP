@@ -1,91 +1,131 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { useAuditStore } from "./auditStore";
-
+import { axiosClient } from "@/api/axiosClient";
 import type { Product } from "@/types/product.types";
 
 type ProductInput = Omit<Product, "id" | "createdAt">;
 
 type ProductStore = {
   products: Product[];
+  isFetched: boolean;
+  isLoading: boolean;
+  error: string | null;
 
-  addProduct: (product: ProductInput) => void;
-  updateProduct: (id: string, product: ProductInput) => void;
-  deleteProduct: (id: string) => void;
+  fetchProducts: (force?: boolean) => Promise<void>;
+  addProduct: (product: ProductInput) => Promise<boolean>;
+  updateProduct: (id: string, product: ProductInput) => Promise<boolean>;
+  deleteProduct: (id: string) => Promise<boolean>;
   getProductById: (id: string) => Product | undefined;
 };
 
-export const useProductStore = create<ProductStore>()(
-  persist(
-    (set, get) => ({
-      products: [],
+export const useProductStore = create<ProductStore>((set, get) => ({
+  products: [],
+  isFetched: false,
+  isLoading: false,
+  error: null,
 
-      addProduct: (product) =>
-        set((state) => {
-          const newProduct = {
-            id: crypto.randomUUID(),
-            ...product,
-            createdAt: new Date().toISOString().slice(0, 10),
-          };
+  fetchProducts: async (force = false) => {
+    // If already fetched and not forcing refresh, use the in-memory cache
+    if (get().isFetched && !force) return;
 
-          useAuditStore.getState().addLog({
-            action: "CREATE",
-            entity: "PRODUCT",
-            user: { name: "System Admin", email: "admin@invoice-system.local" },
-            ipAddress: "127.0.0.1",
-            details: `Added Product: ${product.name}`
-          });
-
-          return { products: [newProduct, ...state.products] };
-        }),
-
-      updateProduct: (id, updatedProduct) =>
-        set((state) => {
-          const product = state.products.find(p => p.id === id);
-          if (product) {
-            useAuditStore.getState().addLog({
-              action: "UPDATE",
-              entity: "PRODUCT",
-              user: { name: "System Admin", email: "admin@invoice-system.local" },
-              ipAddress: "127.0.0.1",
-              details: `Updated Product: ${product.name}`
-            });
-          }
-          return {
-            products: state.products.map((product) =>
-              product.id === id
-                ? {
-                    ...product,
-                    ...updatedProduct,
-                  }
-                : product
-            ),
-          };
-        }),
-
-      deleteProduct: (id) =>
-        set((state) => {
-          const product = state.products.find(p => p.id === id);
-          if (product) {
-            useAuditStore.getState().addLog({
-              action: "DELETE",
-              entity: "PRODUCT",
-              user: { name: "System Admin", email: "admin@invoice-system.local" },
-              ipAddress: "127.0.0.1",
-              details: `Deleted Product: ${product.name}`
-            });
-          }
-          return {
-            products: state.products.filter((product) => product.id !== id),
-          };
-        }),
-
-      getProductById: (id) => {
-        return get().products.find((product) => product.id === id);
-      },
-    }),
-    {
-      name: "erp_products",
+    set({ isLoading: true, error: null });
+    try {
+      const response = await axiosClient.get("/products");
+      if (response.status === 200) {
+        set({
+          products: response.data,
+          isFetched: true,
+          isLoading: false,
+        });
+      }
+    } catch (err) {
+      set({
+        isLoading: false,
+        error: err instanceof Error ? err.message : "Failed to fetch products",
+      });
     }
-  )
-);
+  },
+
+  addProduct: async (product) => {
+    try {
+      const response = await axiosClient.post("/products", product);
+      if (response.status === 201) {
+        const newProduct = response.data;
+        set((state) => ({ products: [newProduct, ...state.products] }));
+
+        // Trigger live audit log insertion
+        useAuditStore.getState().addLog({
+          action: "CREATE",
+          entity: "PRODUCT",
+          userName: "System Admin",
+          userEmail: "admin@example.com",
+          ipAddress: "127.0.0.1",
+          details: `Added Product: ${product.name}`,
+        });
+
+        return true;
+      }
+      return false;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  updateProduct: async (id, updatedProduct) => {
+    try {
+      const response = await axiosClient.put(`/products/${id}`, updatedProduct);
+      if (response.status === 200) {
+        const updated = response.data;
+        set((state) => ({
+          products: state.products.map((p) => (p.id === id ? updated : p)),
+        }));
+
+        useAuditStore.getState().addLog({
+          action: "UPDATE",
+          entity: "PRODUCT",
+          userName: "System Admin",
+          userEmail: "admin@example.com",
+          ipAddress: "127.0.0.1",
+          details: `Updated Product: ${updatedProduct.name}`,
+        });
+
+        return true;
+      }
+      return false;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  deleteProduct: async (id) => {
+    try {
+      const targetProduct = get().products.find((p) => p.id === id);
+      const response = await axiosClient.delete(`/products/${id}`);
+      if (response.status === 200) {
+        set((state) => ({
+          products: state.products.filter((p) => p.id !== id),
+        }));
+
+        if (targetProduct) {
+          useAuditStore.getState().addLog({
+            action: "DELETE",
+            entity: "PRODUCT",
+            userName: "System Admin",
+            userEmail: "admin@example.com",
+            ipAddress: "127.0.0.1",
+            details: `Deleted Product: ${targetProduct.name}`,
+          });
+        }
+
+        return true;
+      }
+      return false;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  getProductById: (id) => {
+    return get().products.find((product) => product.id === id);
+  },
+}));

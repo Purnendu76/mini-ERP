@@ -1,5 +1,5 @@
-export type UserRole = "Admin" | "Manager" | "Staff";
-export type UserStatus = "Active" | "Inactive";
+import type { UserRole, UserStatus } from "@/config/roles.config";
+export type { UserRole, UserStatus };
 
 export type AuthUser = {
   id: string;

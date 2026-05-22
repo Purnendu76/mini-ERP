@@ -7,6 +7,11 @@ import { Suspense, useState, useEffect } from "react";
 import { SuspenseLoader } from "@/components/loaders/SuspenseLoader";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuthStore } from "@/store/authStore";
+import { useProductStore } from "@/store/productStore";
+import { useExpenseStore } from "@/store/expenseStore";
+import { useInvoiceStore } from "@/store/invoiceStore";
+import { useUserStore } from "@/store/userStore";
+import { useAuditStore } from "@/store/auditStore";
 
 export default function AppLayout() {
   const user = useAuthStore((state) => state.user);
@@ -15,8 +20,25 @@ export default function AppLayout() {
   const routes = useAppRoutes();
   const [isPageLoading, setIsPageLoading] = useState(false);
 
+  const fetchProducts = useProductStore((state) => state.fetchProducts);
+  const fetchExpenses = useExpenseStore((state) => state.fetchExpenses);
+  const fetchInvoices = useInvoiceStore((state) => state.fetchInvoices);
+  const fetchUsers = useUserStore((state) => state.fetchUsers);
+  const fetchLogs = useAuditStore((state) => state.fetchLogs);
+
   // Derive role prefix from URL (e.g., admin, manager, staff)
   const rolePrefix = location.pathname.split("/")[1] || "admin";
+
+  // Pre-fetch all backend data on app mount (fully optimized with in-memory caching)
+  useEffect(() => {
+    if (user) {
+      fetchProducts();
+      fetchExpenses();
+      fetchInvoices();
+      fetchUsers();
+      fetchLogs();
+    }
+  }, [user, fetchProducts, fetchExpenses, fetchInvoices, fetchUsers, fetchLogs]);
 
   // Trigger skeleton on route change for a smoother transition
   useEffect(() => {

@@ -16,7 +16,7 @@ import {
   Upload,
   ImagePlus,
 } from "lucide-react";
-import * as XLSX from "xlsx";
+import { ImportExportActions } from "@/components/ImportExportActions";
 import {
   format,
   isWithinInterval,
@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { useUserStore } from "@/store/userStore";
 import { useAuthStore } from "@/store/authStore";
 import { canPerformAction } from "@/config/permissions";
+import { USER_ROLES, USER_STATUSES } from "@/config/roles.config";
 import type {
   RegisteredUser as User,
   UserRole,
@@ -111,7 +112,6 @@ export default function UserManagementTable({
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
 
   // Sync users whenever the role or component mounts
   useEffect(() => {
@@ -162,10 +162,7 @@ export default function UserManagementTable({
     });
   }, [users, role, search, dateRange]);
 
-  const handleExport = async () => {
-    setIsExporting(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
+  const getUsersExportData = () => {
     const baseData =
       filteredUsers.length > 0
         ? filteredUsers
@@ -179,7 +176,7 @@ export default function UserManagementTable({
             },
           ];
 
-    const dataToExport = baseData.map((u) => ({
+    return baseData.map((u) => ({
       Name: u.name,
       Email: u.email,
       Status: u.status,
@@ -188,13 +185,6 @@ export default function UserManagementTable({
         ? new Date(u.createdAt).toLocaleDateString()
         : "",
     }));
-
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
-    XLSX.writeFile(workbook, `${title.replace(/\s+/g, "_")}_Export.xlsx`);
-    setIsExporting(false);
-    toast.success("Exported successfully");
   };
 
   const openForm = (user?: User) => {
@@ -316,19 +306,14 @@ export default function UserManagementTable({
             </PopoverContent>
           </Popover>
 
-          <Button
-            variant="outline"
-            disabled={isExporting}
-            onClick={handleExport}
-            className="h-10 rounded-lg border-slate-200 gap-2 font-medium"
-          >
-            {isExporting ? (
-              <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
-            ) : (
-              <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
-            )}
-            {isExporting ? "Exporting..." : "Export"}
-          </Button>
+          <ImportExportActions
+            exportData={getUsersExportData}
+            exportFileName={`${title.replace(/\s+/g, "_")}_Export.xlsx`}
+            sheetName="Users"
+            variant="table"
+            exportLabel="Export"
+            showImport={false}
+          />
           {canCreate && (
             <Button
               onClick={() => openForm()}
@@ -516,9 +501,11 @@ export default function UserManagementTable({
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="Admin">Admin</SelectItem>
-                  <SelectItem value="Manager">Manager</SelectItem>
-                  <SelectItem value="Staff">Staff</SelectItem>
+                  {USER_ROLES.map((roleOpt) => (
+                    <SelectItem key={roleOpt.id} value={roleOpt.id}>
+                      {roleOpt.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -578,8 +565,11 @@ export default function UserManagementTable({
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  {USER_STATUSES.map((statusOpt) => (
+                    <SelectItem key={statusOpt.id} value={statusOpt.id}>
+                      {statusOpt.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
