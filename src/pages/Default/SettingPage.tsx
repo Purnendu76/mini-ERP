@@ -9,6 +9,8 @@ import bcrypt from "bcryptjs";
 import { useAuthStore } from "@/store/authStore";
 import { getRegisteredUsers, saveRegisteredUsers } from "@/lib/registeredUsers";
 import { useUserStore } from "@/store/userStore";
+import { axiosClient } from "@/api/axiosClient";
+import { setAuthCookies } from "@/lib/authCookies";
 import {
   Camera,
   CheckCircle2,
@@ -19,6 +21,7 @@ import {
   Save,
   ShieldCheck,
   User,
+  Loader2,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -61,6 +64,7 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 export default function SettingPage() {
   const { user } = useAuthStore();
   const [avatarPreview, setAvatarPreview] = useState(user?.photo || "");
+  const [isUploading, setIsUploading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -122,7 +126,7 @@ export default function SettingPage() {
     [newPassword],
   );
 
-  const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
 
     if (!file) return;
@@ -132,28 +136,66 @@ export default function SettingPage() {
       return;
     }
 
-    const reader = new FileReader();
+    setIsUploading(true);
+    const toastId = toast.loading("Uploading image to B2 storage...");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "avatars");
 
-    reader.onload = () => {
-      setAvatarPreview(String(reader.result));
-      toast.success("Profile photo selected");
-    };
+      const response = await axiosClient.post("/uploads/file", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-    reader.readAsDataURL(file);
+      if (response.data?.success) {
+        const uploadedUrl = response.data.data.url;
+        setAvatarPreview(uploadedUrl);
+        toast.success("Profile photo uploaded successfully!", { id: toastId });
+      } else {
+        toast.error("Failed to upload photo", { id: toastId });
+      }
+    } catch (error) {
+      console.error("Avatar upload error:", error);
+      toast.error("Error uploading photo to storage", { id: toastId });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleProfileSubmit = async (values: ProfileFormValues) => {
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    if (!user) {
+      toast.error("You must be logged in to update your profile.");
+      return;
+    }
 
-    localStorage.setItem(
-      "erp_profile_settings",
-      JSON.stringify({
-        ...values,
-        avatar: avatarPreview,
-      }),
-    );
+    try {
+      const response = await axiosClient.put(`/auth/users/${user.id}`, {
+        name: values.fullName,
+        photo: avatarPreview,
+      });
 
-    toast.success("Profile updated successfully");
+      if (response.status === 200) {
+        const updatedUser = {
+          ...user,
+          name: values.fullName,
+          photo: avatarPreview,
+        };
+
+        const token = useAuthStore.getState().token;
+        if (token) {
+          setAuthCookies(token, updatedUser);
+        }
+
+        useAuthStore.setState({ user: updatedUser });
+
+        toast.success("Profile updated successfully");
+      }
+    } catch (error: any) {
+      console.error("Failed to update profile:", error);
+      toast.error(error.response?.data?.message || "Failed to update profile");
+    }
   };
 
   const handlePasswordSubmit = async (values: PasswordFormValues) => {
@@ -254,9 +296,15 @@ export default function SettingPage() {
 
                       <label
                         htmlFor="avatarUpload"
-                        className="absolute bottom-2 right-2 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition hover:bg-blue-700"
+                        className={`absolute bottom-2 right-2 flex h-9 w-9 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition hover:bg-blue-700 ${
+                          isUploading ? "cursor-not-allowed opacity-80" : "cursor-pointer"
+                        }`}
                       >
-                        <Camera className="h-4 w-4" />
+                        {isUploading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Camera className="h-4 w-4" />
+                        )}
                       </label>
 
                       <input
@@ -265,18 +313,20 @@ export default function SettingPage() {
                         accept="image/jpeg,image/jpg,image/png,image/gif"
                         className="hidden"
                         onChange={handleAvatarChange}
+                        disabled={isUploading}
                       />
                     </div>
 
                     <div>
-                      <label htmlFor="avatarUpload">
+                      <label htmlFor={isUploading ? undefined : "avatarUpload"}>
                         <Button
                           type="button"
                           variant="outline"
                           className="h-9 cursor-pointer rounded-lg"
+                          disabled={isUploading}
                           asChild
                         >
-                          <span>Change Photo</span>
+                          <span>{isUploading ? "Uploading..." : "Change Photo"}</span>
                         </Button>
                       </label>
 
