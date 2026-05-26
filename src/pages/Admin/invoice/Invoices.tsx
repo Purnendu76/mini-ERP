@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
@@ -148,8 +148,12 @@ export default function Invoices() {
     ? canPerformAction(currentUser.role, "delete", "invoices")
     : false;
 
-  const { invoices, addInvoice, updateInvoice, deleteInvoice } =
+  const { invoices, fetchInvoices, addInvoice, updateInvoice, deleteInvoice } =
     useInvoiceStore();
+
+  useEffect(() => {
+    fetchInvoices(true);
+  }, []);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();

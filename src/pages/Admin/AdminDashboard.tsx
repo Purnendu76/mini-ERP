@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   Area,
@@ -39,6 +39,7 @@ import { useExpenseStore } from "@/store/expenseStore";
 import { useProductStore } from "@/store/productStore";
 import { useUserStore } from "@/store/userStore";
 import { useAuditStore } from "@/store/auditStore";
+import { useDashboardStore } from "@/store/dashboardStore";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -103,6 +104,11 @@ export default function AdminDashboard() {
   const { products } = useProductStore();
   const { users } = useUserStore();
   const { logs } = useAuditStore();
+  const { fetchDashboard } = useDashboardStore();
+
+  useEffect(() => {
+    fetchDashboard();
+  }, [fetchDashboard]);
 
   const [period, setPeriod] = useState("monthly");
   const [businessUnit, setBusinessUnit] = useState("all");

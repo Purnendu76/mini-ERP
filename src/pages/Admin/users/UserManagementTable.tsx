@@ -36,6 +36,7 @@ import type {
   UserStatus,
 } from "@/types/auth.types";
 import { Button } from "@/components/ui/button";
+import { ImageUpload } from "@/components/ImageUpload";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -92,7 +93,7 @@ export default function UserManagementTable({
   const addUser = useUserStore((state) => state.addUser);
   const updateUser = useUserStore((state) => state.updateUser);
   const deleteUser = useUserStore((state) => state.deleteUser);
-  const syncWithAuth = useUserStore((state) => state.syncWithAuth);
+  const fetchUsers = useUserStore((state) => state.fetchUsers);
 
   const currentUser = useAuthStore((state) => state.user);
   const canCreate = currentUser
@@ -113,23 +114,10 @@ export default function UserManagementTable({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Sync users whenever the role or component mounts
+  // Load users on component mount (fully optimized with in-memory caching)
   useEffect(() => {
-    syncWithAuth();
-  }, [role, syncWithAuth]);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, photo: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+    fetchUsers(true);
+  }, []);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -511,47 +499,14 @@ export default function UserManagementTable({
             </div>
             <div className="space-y-2">
               <Label>Profile Photo (Optional)</Label>
-              <div
-                className="rounded-2xl border border-dashed border-border bg-muted/50 p-5 cursor-pointer hover:bg-muted/80 transition-colors relative overflow-hidden"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleImageUpload}
-                  accept="image/*"
-                  className="hidden"
-                />
-                {formData.photo ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="h-24 w-24 rounded-full overflow-hidden border shadow-sm">
-                      <img
-                        src={formData.photo}
-                        alt="Preview"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    <p className="text-xs text-blue-600 font-medium">
-                      Click to change photo
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-sm">
-                      <ImagePlus className="h-5 w-5" />
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        Upload Photo
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Click to select an image from your device.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <ImageUpload
+                value={formData.photo}
+                onChange={(url) => setFormData((prev) => ({ ...prev, photo: url }))}
+                folder="users"
+                label="Upload Photo"
+                description="Click to select an image from your device."
+                variant="circle"
+              />
             </div>
             <div className="space-y-2">
               <Label>Account Status</Label>

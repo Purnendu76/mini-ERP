@@ -161,8 +161,12 @@ export default function Expenses() {
     ? canPerformAction(currentUser.role, "delete", "expenses")
     : false;
 
-  const { expenses, addExpense, updateExpense, deleteExpense } =
+  const { expenses, fetchExpenses, addExpense, updateExpense, deleteExpense } =
     useExpenseStore();
+
+  useEffect(() => {
+    fetchExpenses(true);
+  }, []);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");

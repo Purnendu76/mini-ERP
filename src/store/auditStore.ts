@@ -14,6 +14,8 @@ interface AuditState {
   clearLogs: () => Promise<boolean>;
 }
 
+let activeFetchPromise: Promise<void> | null = null;
+
 export const useAuditStore = create<AuditState>((set, get) => ({
   logs: [],
   isFetched: false,
@@ -21,39 +23,47 @@ export const useAuditStore = create<AuditState>((set, get) => ({
   error: null,
 
   fetchLogs: async (force = false) => {
+    // Deduplicate concurrent requests
+    if (activeFetchPromise) return activeFetchPromise;
     if (get().isFetched && !force) return;
 
-    set({ isLoading: true, error: null });
-    try {
-      const response = await axiosClient.get("/audit-logs");
-      if (response.status === 200) {
-        const mappedLogs: AuditLog[] = response.data.map((log: any) => ({
-          id: log.id,
-          timestamp: log.timestamp ? new Date(log.timestamp).toISOString().replace('T', ' ').split('.')[0] : new Date().toISOString().replace('T', ' ').split('.')[0],
-          action: log.action,
-          entity: log.entity,
-          user: {
-            name: log.userName || (log.user && log.user.name) || "System Admin",
-            email: log.userEmail || (log.user && log.user.email) || "admin@example.com",
-          },
-          ipAddress: log.ipAddress || "127.0.0.1",
-          details: log.details,
-        }));
+    activeFetchPromise = (async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const response = await axiosClient.get("/audit-logs");
+        if (response.status === 200) {
+          const mappedLogs: AuditLog[] = response.data.map((log: any) => ({
+            id: log.id,
+            timestamp: log.timestamp ? new Date(log.timestamp).toISOString().replace('T', ' ').split('.')[0] : new Date().toISOString().replace('T', ' ').split('.')[0],
+            action: log.action,
+            entity: log.entity,
+            user: {
+              name: log.userName || (log.user && log.user.name) || "System Admin",
+              email: log.userEmail || (log.user && log.user.email) || "admin@example.com",
+            },
+            ipAddress: log.ipAddress || "127.0.0.1",
+            details: log.details,
+          }));
 
-        mappedLogs.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+          mappedLogs.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
+          set({
+            logs: mappedLogs,
+            isFetched: true,
+            isLoading: false,
+          });
+        }
+      } catch (err) {
         set({
-          logs: mappedLogs,
-          isFetched: true,
           isLoading: false,
+          error: err instanceof Error ? err.message : "Failed to fetch audit logs",
         });
+      } finally {
+        activeFetchPromise = null;
       }
-    } catch (err) {
-      set({
-        isLoading: false,
-        error: err instanceof Error ? err.message : "Failed to fetch audit logs",
-      });
-    }
+    })();
+
+    return activeFetchPromise;
   },
 
   addLog: async (logData) => {

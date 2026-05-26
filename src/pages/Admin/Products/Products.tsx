@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -40,6 +40,7 @@ import { useProductStore } from "@/store/productStore";
 import { useAuthStore } from "@/store/authStore";
 import { canPerformAction } from "@/config/permissions";
 import type { Product, ProductStatus } from "@/types/product.types";
+import { ImageUpload } from "@/components/ImageUpload";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -132,8 +133,12 @@ export default function Products() {
     ? canPerformAction(currentUser.role, "delete", "products")
     : false;
 
-  const { products, addProduct, updateProduct, deleteProduct } =
+  const { products, fetchProducts, addProduct, updateProduct, deleteProduct } =
     useProductStore();
+
+  useEffect(() => {
+    fetchProducts(true);
+  }, []);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -155,20 +160,6 @@ export default function Products() {
     });
   const errors = formState.errors as any;
   const { isSubmitting } = formState;
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const watchedImage = watch("image");
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setValue("image", reader.result as string, { shouldDirty: true });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const filteredProducts = useMemo(() => {
     let data = [...products];
@@ -830,47 +821,20 @@ export default function Products() {
               </FormField>
             </div>
 
-            <div
-              className="rounded-2xl border border-dashed border-border bg-muted/50 p-5 cursor-pointer hover:bg-muted/80 transition-colors relative overflow-hidden"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                accept="image/*"
-                className="hidden"
-              />
-              {watchedImage ? (
-                <div className="flex flex-col items-center gap-3">
-                  <div className="h-32 w-32 rounded-xl overflow-hidden border">
-                    <img
-                      src={watchedImage}
-                      alt="Preview"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <p className="text-xs text-blue-600 font-medium">
-                    Click to change image
-                  </p>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-sm">
-                    <Upload className="h-5 w-5" />
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      Upload Product Image
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Click here to select a file from your computer (JPG, PNG).
-                    </p>
-                  </div>
-                </div>
+            <Controller
+              control={control}
+              name="image"
+              render={({ field }) => (
+                <ImageUpload
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  folder="products"
+                  label="Upload Product Image"
+                  description="Click here to select a file from your computer (JPG, PNG)."
+                  variant="square"
+                />
               )}
-            </div>
+            />
 
             <div className="flex justify-end gap-3 pt-2">
               <Button

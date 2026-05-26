@@ -18,6 +18,8 @@ type ProductStore = {
   getProductById: (id: string) => Product | undefined;
 };
 
+let activeFetchPromise: Promise<void> | null = null;
+
 export const useProductStore = create<ProductStore>((set, get) => ({
   products: [],
   isFetched: false,
@@ -25,25 +27,32 @@ export const useProductStore = create<ProductStore>((set, get) => ({
   error: null,
 
   fetchProducts: async (force = false) => {
-    // If already fetched and not forcing refresh, use the in-memory cache
+    // Deduplicate concurrent requests
+    if (activeFetchPromise) return activeFetchPromise;
     if (get().isFetched && !force) return;
 
-    set({ isLoading: true, error: null });
-    try {
-      const response = await axiosClient.get("/products");
-      if (response.status === 200) {
+    activeFetchPromise = (async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const response = await axiosClient.get("/products");
+        if (response.status === 200) {
+          set({
+            products: response.data,
+            isFetched: true,
+            isLoading: false,
+          });
+        }
+      } catch (err) {
         set({
-          products: response.data,
-          isFetched: true,
           isLoading: false,
+          error: err instanceof Error ? err.message : "Failed to fetch products",
         });
+      } finally {
+        activeFetchPromise = null;
       }
-    } catch (err) {
-      set({
-        isLoading: false,
-        error: err instanceof Error ? err.message : "Failed to fetch products",
-      });
-    }
+    })();
+
+    return activeFetchPromise;
   },
 
   addProduct: async (product) => {

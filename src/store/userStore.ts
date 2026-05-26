@@ -16,6 +16,8 @@ interface UserState {
   syncWithAuth: () => void;
 }
 
+let activeFetchPromise: Promise<void> | null = null;
+
 export const useUserStore = create<UserState>((set, get) => ({
   users: [],
   isFetched: false,
@@ -27,24 +29,32 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   fetchUsers: async (force = false) => {
+    // Deduplicate concurrent requests
+    if (activeFetchPromise) return activeFetchPromise;
     if (get().isFetched && !force) return;
 
-    set({ isLoading: true, error: null });
-    try {
-      const response = await axiosClient.get("/auth/users");
-      if (response.status === 200) {
+    activeFetchPromise = (async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const response = await axiosClient.get("/auth/users");
+        if (response.status === 200) {
+          set({
+            users: response.data,
+            isFetched: true,
+            isLoading: false,
+          });
+        }
+      } catch (err) {
         set({
-          users: response.data,
-          isFetched: true,
           isLoading: false,
+          error: err instanceof Error ? err.message : "Failed to fetch users",
         });
+      } finally {
+        activeFetchPromise = null;
       }
-    } catch (err) {
-      set({
-        isLoading: false,
-        error: err instanceof Error ? err.message : "Failed to fetch users",
-      });
-    }
+    })();
+
+    return activeFetchPromise;
   },
 
   addUser: async (userData) => {

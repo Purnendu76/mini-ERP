@@ -50,6 +50,8 @@ function buildInvoiceData(input: InvoiceInput) {
   };
 }
 
+let activeFetchPromise: Promise<void> | null = null;
+
 export const useInvoiceStore = create<InvoiceStore>((set, get) => ({
   invoices: [],
   isFetched: false,
@@ -57,24 +59,32 @@ export const useInvoiceStore = create<InvoiceStore>((set, get) => ({
   error: null,
 
   fetchInvoices: async (force = false) => {
+    // Deduplicate concurrent requests
+    if (activeFetchPromise) return activeFetchPromise;
     if (get().isFetched && !force) return;
 
-    set({ isLoading: true, error: null });
-    try {
-      const response = await axiosClient.get("/invoices");
-      if (response.status === 200) {
+    activeFetchPromise = (async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const response = await axiosClient.get("/invoices");
+        if (response.status === 200) {
+          set({
+            invoices: response.data,
+            isFetched: true,
+            isLoading: false,
+          });
+        }
+      } catch (err) {
         set({
-          invoices: response.data,
-          isFetched: true,
           isLoading: false,
+          error: err instanceof Error ? err.message : "Failed to fetch invoices",
         });
+      } finally {
+        activeFetchPromise = null;
       }
-    } catch (err) {
-      set({
-        isLoading: false,
-        error: err instanceof Error ? err.message : "Failed to fetch invoices",
-      });
-    }
+    })();
+
+    return activeFetchPromise;
   },
 
   addInvoice: async (invoice) => {

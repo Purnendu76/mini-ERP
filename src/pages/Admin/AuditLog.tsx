@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search,
   Calendar as CalendarIcon,
@@ -40,7 +40,11 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export default function AuditLog() {
-  const { logs, clearLogs } = useAuditStore();
+  const { logs, fetchLogs, clearLogs } = useAuditStore();
+
+  useEffect(() => {
+    fetchLogs(true);
+  }, []);
   
   // Filter states
   const [entityFilter, setEntityFilter] = useState<string>("all");
