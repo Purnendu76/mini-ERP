@@ -19,12 +19,8 @@ import {
   UserRound,
   WalletCards,
   Calendar as CalendarIcon,
-  Download,
-  Upload,
-  FileSpreadsheet,
-  Loader2,
 } from "lucide-react";
-import * as XLSX from "xlsx";
+import { ImportExportActions, cleanAmount, cleanDate } from "@/components/ImportExportActions";
 import {
   format,
   isWithinInterval,
@@ -165,8 +161,12 @@ export default function Expenses() {
     ? canPerformAction(currentUser.role, "delete", "expenses")
     : false;
 
-  const { expenses, addExpense, updateExpense, deleteExpense } =
+  const { expenses, fetchExpenses, addExpense, updateExpense, deleteExpense } =
     useExpenseStore();
+
+  useEffect(() => {
+    fetchExpenses(true);
+  }, []);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -174,8 +174,6 @@ export default function Expenses() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [sortBy, setSortBy] = useState("newest");
   const [page, setPage] = useState(1);
-  const [isImporting, setIsImporting] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -343,83 +341,69 @@ export default function Expenses() {
     setDeleteExpenseItem(null);
   };
 
-  const exportToExcel = () => {
-    const dataToExport =
-      expenses.length > 0
-        ? expenses
-        : [
-            {
-              title: "",
-              category: "",
-              amount: 0,
-              paymentMethod: "",
-              expenseDate: "",
-              submittedBy: "",
-              status: "",
-              createdAt: "",
-            },
-          ];
-
-    setIsExporting(true);
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Expenses");
-
-    setTimeout(() => {
-      XLSX.writeFile(workbook, "business_expenses.xlsx");
-      setIsExporting(false);
-      toast.success("Expenses exported successfully");
-    }, 800);
+  const getExpensesExportData = () => {
+    return expenses.length > 0
+      ? expenses.map((e) => ({
+          Title: e.title,
+          Category: e.category,
+          Amount: e.amount,
+          "Payment Method": e.paymentMethod,
+          "Expense Date": e.expenseDate
+            ? new Date(e.expenseDate).toLocaleDateString()
+            : "",
+          "Submitted By": e.submittedBy,
+          Status: e.status,
+          "Created At": e.createdAt
+            ? new Date(e.createdAt).toLocaleDateString()
+            : "",
+        }))
+      : [
+          {
+            Title: "",
+            Category: "",
+            Amount: 0,
+            "Payment Method": "",
+            "Expense Date": "",
+            "Submitted By": "",
+            Status: "",
+            "Created At": "",
+          },
+        ];
   };
 
-  const importFromExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleImportExpenses = async (json: any[]) => {
+    const importPromises: Promise<boolean>[] = [];
+    json.forEach((item) => {
+      const title = item.title || item.Title;
+      const amountRaw = item.amount !== undefined ? item.amount : item.Amount;
+      const category = item.category || item.Category;
+      const paymentMethod = item.paymentMethod || item["Payment Method"];
+      const expenseDate = item.expenseDate || item["Expense Date"];
+      const submittedBy = item.submittedBy || item["Submitted By"];
+      const status = item.status || item.Status;
 
-    setIsImporting(true);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: "binary" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet) as any[];
-
-        let importedCount = 0;
-        json.forEach((item) => {
-          if (item.title && item.amount !== undefined && item.category) {
-            addExpense({
-              title: String(item.title),
-              category: (item.category as any) || "Other",
-              amount: Number(item.amount),
-              paymentMethod: (item.paymentMethod as any) || "Cash",
-              expenseDate: String(
-                item.expenseDate || new Date().toISOString().split("T")[0],
-              ),
-              submittedBy: String(item.submittedBy || "Unknown"),
-              status: (item.status as any) || "Pending",
-            });
-            importedCount++;
-          }
-        });
-
-        setTimeout(() => {
-          setIsImporting(false);
-          toast.success(`Successfully imported ${importedCount} expenses`);
-        }, 1000);
-        event.target.value = ""; // Reset input
-      } catch (error) {
-        setIsImporting(false);
-        toast.error("Failed to import excel file");
-        console.error(error);
+      if (title && amountRaw !== undefined && category) {
+        const expenseData = {
+          title: String(title),
+          category: (category as any) || "Other",
+          amount: cleanAmount(amountRaw),
+          paymentMethod: (paymentMethod as any) || "Cash",
+          expenseDate: cleanDate(expenseDate),
+          submittedBy: String(submittedBy || "Unknown"),
+          status: (status as any) || "Pending",
+        };
+        importPromises.push(addExpense(expenseData));
       }
-    };
-    reader.onerror = () => {
-      setIsImporting(false);
-      toast.error("Failed to read file");
-    };
-    reader.readAsBinaryString(file);
+    });
+
+    const results = await Promise.all(importPromises);
+    const importedCount = results.filter(Boolean).length;
+
+    if (importedCount > 0) {
+      toast.success(`Successfully imported ${importedCount} expenses`);
+    } else {
+      toast.error("No expenses were successfully imported. Please verify data format.");
+    }
   };
 
   const clearFilters = () => {
@@ -458,46 +442,13 @@ export default function Expenses() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <input
-                type="file"
-                accept=".xlsx, .xls, .csv"
-                id="expense-import"
-                className="hidden"
-                onChange={importFromExcel}
+              <ImportExportActions
+                exportData={getExpensesExportData}
+                exportFileName="business_expenses.xlsx"
+                sheetName="Expenses"
+                onImport={handleImportExpenses}
+                showImport={canCreate}
               />
-              {canCreate && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isImporting}
-                  className="h-10 rounded-xl border-blue-200 bg-blue-50/50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-400"
-                  onClick={() =>
-                    document.getElementById("expense-import")?.click()
-                  }
-                >
-                  {isImporting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Upload className="mr-2 h-4 w-4" />
-                  )}
-                  {isImporting ? "Importing..." : "Import"}
-                </Button>
-              )}
-
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isExporting}
-                className="h-10 rounded-xl border-emerald-200 bg-emerald-50/50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-950/20 dark:text-emerald-400"
-                onClick={exportToExcel}
-              >
-                {isExporting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="mr-2 h-4 w-4" />
-                )}
-                {isExporting ? "Exporting..." : "Export"}
-              </Button>
 
               {canCreate && (
                 <Button

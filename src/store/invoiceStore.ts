@@ -1,7 +1,6 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { useAuditStore } from "./auditStore";
-
+import { axiosClient } from "@/api/axiosClient";
 import type {
   Invoice,
   InvoiceInput,
@@ -10,22 +9,18 @@ import type {
 
 type InvoiceStore = {
   invoices: Invoice[];
+  isFetched: boolean;
+  isLoading: boolean;
+  error: string | null;
 
-  addInvoice: (invoice: InvoiceInput) => void;
-  updateInvoice: (id: string, invoice: InvoiceInput) => void;
-  deleteInvoice: (id: string) => void;
+  fetchInvoices: (force?: boolean) => Promise<void>;
+  addInvoice: (invoice: InvoiceInput) => Promise<boolean>;
+  updateInvoice: (id: string, invoice: InvoiceInput) => Promise<boolean>;
+  deleteInvoice: (id: string) => Promise<boolean>;
   getInvoiceById: (id: string) => Invoice | undefined;
-  markInvoiceAsPaid: (id: string) => void;
+  markInvoiceAsPaid: (id: string) => Promise<boolean>;
   clearInvoices: () => void;
 };
-
-function createId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-
-  return String(Date.now());
-}
 
 function buildInvoiceData(input: InvoiceInput) {
   const items: InvoiceItem[] = input.items.map((item) => {
@@ -55,106 +50,161 @@ function buildInvoiceData(input: InvoiceInput) {
   };
 }
 
-export const useInvoiceStore = create<InvoiceStore>()(
-  persist(
-    (set, get) => ({
-      invoices: [],
+let activeFetchPromise: Promise<void> | null = null;
 
-      addInvoice: (invoice) =>
-        set((state) => {
-          const newInvoice = {
-            id: createId(),
-            ...buildInvoiceData(invoice),
-            createdAt: new Date().toISOString(),
-          };
-          
-          useAuditStore.getState().addLog({
-            action: "CREATE",
-            entity: "INVOICE",
-            user: { name: "System Admin", email: "admin@invoice-system.local" },
-            ipAddress: "127.0.0.1",
-            details: `Created Invoice: ${newInvoice.invoiceNumber}`
+export const useInvoiceStore = create<InvoiceStore>((set, get) => ({
+  invoices: [],
+  isFetched: false,
+  isLoading: false,
+  error: null,
+
+  fetchInvoices: async (force = false) => {
+    // Deduplicate concurrent requests
+    if (activeFetchPromise) return activeFetchPromise;
+    if (get().isFetched && !force) return;
+
+    activeFetchPromise = (async () => {
+      set({ isLoading: true, error: null });
+      try {
+        const response = await axiosClient.get("/invoices");
+        if (response.status === 200) {
+          set({
+            invoices: response.data,
+            isFetched: true,
+            isLoading: false,
           });
-
-          return { invoices: [newInvoice, ...state.invoices] };
-        }),
-
-      updateInvoice: (id, updatedInvoice) =>
-        set((state) => {
-          const invoice = state.invoices.find(i => i.id === id);
-          if (invoice) {
-            useAuditStore.getState().addLog({
-              action: "UPDATE",
-              entity: "INVOICE",
-              user: { name: "System Admin", email: "admin@invoice-system.local" },
-              ipAddress: "127.0.0.1",
-              details: `Updated Invoice: ${invoice.invoiceNumber}`
-            });
-          }
-          return {
-            invoices: state.invoices.map((invoice) =>
-              invoice.id === id
-                ? {
-                    ...invoice,
-                    ...buildInvoiceData(updatedInvoice),
-                  }
-                : invoice
-            ),
-          };
-        }),
-
-      deleteInvoice: (id) =>
-        set((state) => {
-          const invoice = state.invoices.find(i => i.id === id);
-          if (invoice) {
-            useAuditStore.getState().addLog({
-              action: "DELETE",
-              entity: "INVOICE",
-              user: { name: "System Admin", email: "admin@invoice-system.local" },
-              ipAddress: "127.0.0.1",
-              details: `Deleted Invoice: ${invoice.invoiceNumber}`
-            });
-          }
-          return {
-            invoices: state.invoices.filter((invoice) => invoice.id !== id),
-          };
-        }),
-
-      getInvoiceById: (id) => {
-        return get().invoices.find((invoice) => invoice.id === id);
-      },
-
-      markInvoiceAsPaid: (id) =>
-        set((state) => {
-          const invoice = state.invoices.find(i => i.id === id);
-          if (invoice) {
-            useAuditStore.getState().addLog({
-              action: "PAYMENT",
-              entity: "INVOICE",
-              user: { name: "System Admin", email: "admin@invoice-system.local" },
-              ipAddress: "127.0.0.1",
-              details: `Marked Invoice ${invoice.invoiceNumber} as Paid`
-            });
-          }
-          return {
-            invoices: state.invoices.map((invoice) =>
-              invoice.id === id
-                ? {
-                    ...invoice,
-                    status: "Paid",
-                  }
-                : invoice
-            ),
-          };
-        }),
-
-      clearInvoices: () =>
+        }
+      } catch (err) {
         set({
-          invoices: [],
-        }),
-    }),
-    {
-      name: "erp_invoices",
+          isLoading: false,
+          error: err instanceof Error ? err.message : "Failed to fetch invoices",
+        });
+      } finally {
+        activeFetchPromise = null;
+      }
+    })();
+
+    return activeFetchPromise;
+  },
+
+  addInvoice: async (invoice) => {
+    try {
+      const payload = buildInvoiceData(invoice);
+      const response = await axiosClient.post("/invoices", payload);
+      if (response.status === 201) {
+        const newInvoice = response.data;
+        set((state) => ({ invoices: [newInvoice, ...state.invoices] }));
+
+        useAuditStore.getState().addLog({
+          action: "CREATE",
+          entity: "INVOICE",
+          userName: "System Admin",
+          userEmail: "admin@example.com",
+          ipAddress: "127.0.0.1",
+          details: `Created Invoice: ${newInvoice.invoiceNumber}`,
+        });
+
+        return true;
+      }
+      return false;
+    } catch (error) {
+      return false;
     }
-  )
-);
+  },
+
+  updateInvoice: async (id, updatedInvoice) => {
+    try {
+      const payload = buildInvoiceData(updatedInvoice);
+      const response = await axiosClient.put(`/invoices/${id}`, payload);
+      if (response.status === 200) {
+        const updated = response.data;
+        set((state) => ({
+          invoices: state.invoices.map((inv) => (inv.id === id ? updated : inv)),
+        }));
+
+        useAuditStore.getState().addLog({
+          action: "UPDATE",
+          entity: "INVOICE",
+          userName: "System Admin",
+          userEmail: "admin@example.com",
+          ipAddress: "127.0.0.1",
+          details: `Updated Invoice: ${payload.invoiceNumber}`,
+        });
+
+        return true;
+      }
+      return false;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  deleteInvoice: async (id) => {
+    try {
+      const targetInvoice = get().invoices.find((i) => i.id === id);
+      const response = await axiosClient.delete(`/invoices/${id}`);
+      if (response.status === 200) {
+        set((state) => ({
+          invoices: state.invoices.filter((inv) => inv.id !== id),
+        }));
+
+        if (targetInvoice) {
+          useAuditStore.getState().addLog({
+            action: "DELETE",
+            entity: "INVOICE",
+            userName: "System Admin",
+            userEmail: "admin@example.com",
+            ipAddress: "127.0.0.1",
+            details: `Deleted Invoice: ${targetInvoice.invoiceNumber}`,
+          });
+        }
+
+        return true;
+      }
+      return false;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  getInvoiceById: (id) => {
+    return get().invoices.find((invoice) => invoice.id === id);
+  },
+
+  markInvoiceAsPaid: async (id) => {
+    try {
+      const target = get().invoices.find((i) => i.id === id);
+      if (!target) return false;
+
+      const response = await axiosClient.put(`/invoices/${id}`, {
+        ...target,
+        status: "Paid",
+      });
+
+      if (response.status === 200) {
+        const updated = response.data;
+        set((state) => ({
+          invoices: state.invoices.map((inv) => (inv.id === id ? updated : inv)),
+        }));
+
+        useAuditStore.getState().addLog({
+          action: "PAYMENT",
+          entity: "INVOICE",
+          userName: "System Admin",
+          userEmail: "admin@example.com",
+          ipAddress: "127.0.0.1",
+          details: `Marked Invoice ${target.invoiceNumber} as Paid`,
+        });
+
+        return true;
+      }
+      return false;
+    } catch (error) {
+      return false;
+    }
+  },
+
+  clearInvoices: () => {
+    set({ invoices: [] });
+  },
+}));

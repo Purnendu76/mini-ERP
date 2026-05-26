@@ -16,7 +16,7 @@ import {
   Upload,
   ImagePlus,
 } from "lucide-react";
-import * as XLSX from "xlsx";
+import { ImportExportActions } from "@/components/ImportExportActions";
 import {
   format,
   isWithinInterval,
@@ -29,12 +29,14 @@ import { toast } from "sonner";
 import { useUserStore } from "@/store/userStore";
 import { useAuthStore } from "@/store/authStore";
 import { canPerformAction } from "@/config/permissions";
+import { USER_ROLES, USER_STATUSES } from "@/config/roles.config";
 import type {
   RegisteredUser as User,
   UserRole,
   UserStatus,
 } from "@/types/auth.types";
 import { Button } from "@/components/ui/button";
+import { ImageUpload } from "@/components/ImageUpload";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -91,7 +93,7 @@ export default function UserManagementTable({
   const addUser = useUserStore((state) => state.addUser);
   const updateUser = useUserStore((state) => state.updateUser);
   const deleteUser = useUserStore((state) => state.deleteUser);
-  const syncWithAuth = useUserStore((state) => state.syncWithAuth);
+  const fetchUsers = useUserStore((state) => state.fetchUsers);
 
   const currentUser = useAuthStore((state) => state.user);
   const canCreate = currentUser
@@ -111,25 +113,11 @@ export default function UserManagementTable({
   const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
 
-  // Sync users whenever the role or component mounts
+  // Load users on component mount (fully optimized with in-memory caching)
   useEffect(() => {
-    syncWithAuth();
-  }, [role, syncWithAuth]);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFormData((prev) => ({ ...prev, photo: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+    fetchUsers(true);
+  }, []);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -162,10 +150,7 @@ export default function UserManagementTable({
     });
   }, [users, role, search, dateRange]);
 
-  const handleExport = async () => {
-    setIsExporting(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
+  const getUsersExportData = () => {
     const baseData =
       filteredUsers.length > 0
         ? filteredUsers
@@ -179,7 +164,7 @@ export default function UserManagementTable({
             },
           ];
 
-    const dataToExport = baseData.map((u) => ({
+    return baseData.map((u) => ({
       Name: u.name,
       Email: u.email,
       Status: u.status,
@@ -188,13 +173,6 @@ export default function UserManagementTable({
         ? new Date(u.createdAt).toLocaleDateString()
         : "",
     }));
-
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Users");
-    XLSX.writeFile(workbook, `${title.replace(/\s+/g, "_")}_Export.xlsx`);
-    setIsExporting(false);
-    toast.success("Exported successfully");
   };
 
   const openForm = (user?: User) => {
@@ -316,19 +294,14 @@ export default function UserManagementTable({
             </PopoverContent>
           </Popover>
 
-          <Button
-            variant="outline"
-            disabled={isExporting}
-            onClick={handleExport}
-            className="h-10 rounded-lg border-slate-200 gap-2 font-medium"
-          >
-            {isExporting ? (
-              <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
-            ) : (
-              <FileSpreadsheet className="h-4 w-4 text-emerald-600" />
-            )}
-            {isExporting ? "Exporting..." : "Export"}
-          </Button>
+          <ImportExportActions
+            exportData={getUsersExportData}
+            exportFileName={`${title.replace(/\s+/g, "_")}_Export.xlsx`}
+            sheetName="Users"
+            variant="table"
+            exportLabel="Export"
+            showImport={false}
+          />
           {canCreate && (
             <Button
               onClick={() => openForm()}
@@ -516,55 +489,24 @@ export default function UserManagementTable({
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="Admin">Admin</SelectItem>
-                  <SelectItem value="Manager">Manager</SelectItem>
-                  <SelectItem value="Staff">Staff</SelectItem>
+                  {USER_ROLES.map((roleOpt) => (
+                    <SelectItem key={roleOpt.id} value={roleOpt.id}>
+                      {roleOpt.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
               <Label>Profile Photo (Optional)</Label>
-              <div
-                className="rounded-2xl border border-dashed border-border bg-muted/50 p-5 cursor-pointer hover:bg-muted/80 transition-colors relative overflow-hidden"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleImageUpload}
-                  accept="image/*"
-                  className="hidden"
-                />
-                {formData.photo ? (
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="h-24 w-24 rounded-full overflow-hidden border shadow-sm">
-                      <img
-                        src={formData.photo}
-                        alt="Preview"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    <p className="text-xs text-blue-600 font-medium">
-                      Click to change photo
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-sm">
-                      <ImagePlus className="h-5 w-5" />
-                    </div>
-
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        Upload Photo
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Click to select an image from your device.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <ImageUpload
+                value={formData.photo}
+                onChange={(url) => setFormData((prev) => ({ ...prev, photo: url }))}
+                folder="users"
+                label="Upload Photo"
+                description="Click to select an image from your device."
+                variant="circle"
+              />
             </div>
             <div className="space-y-2">
               <Label>Account Status</Label>
@@ -578,8 +520,11 @@ export default function UserManagementTable({
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  <SelectItem value="Active">Active</SelectItem>
-                  <SelectItem value="Inactive">Inactive</SelectItem>
+                  {USER_STATUSES.map((statusOpt) => (
+                    <SelectItem key={statusOpt.id} value={statusOpt.id}>
+                      {statusOpt.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

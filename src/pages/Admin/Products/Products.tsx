@@ -1,10 +1,10 @@
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+import { ImportExportActions } from "@/components/ImportExportActions";
 import {
   format,
   isWithinInterval,
@@ -40,6 +40,7 @@ import { useProductStore } from "@/store/productStore";
 import { useAuthStore } from "@/store/authStore";
 import { canPerformAction } from "@/config/permissions";
 import type { Product, ProductStatus } from "@/types/product.types";
+import { ImageUpload } from "@/components/ImageUpload";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -132,16 +133,18 @@ export default function Products() {
     ? canPerformAction(currentUser.role, "delete", "products")
     : false;
 
-  const { products, addProduct, updateProduct, deleteProduct } =
+  const { products, fetchProducts, addProduct, updateProduct, deleteProduct } =
     useProductStore();
+
+  useEffect(() => {
+    fetchProducts(true);
+  }, []);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [sortBy, setSortBy] = useState("newest");
   const [page, setPage] = useState(1);
-  const [isImporting, setIsImporting] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -157,20 +160,6 @@ export default function Products() {
     });
   const errors = formState.errors as any;
   const { isSubmitting } = formState;
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const watchedImage = watch("image");
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setValue("image", reader.result as string, { shouldDirty: true });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   const filteredProducts = useMemo(() => {
     let data = [...products];
@@ -295,84 +284,60 @@ export default function Products() {
     setProductToDelete(null);
   };
 
-  const exportToExcel = () => {
-    const dataToExport =
-      products.length > 0
-        ? products
-        : [
-            {
-              name: "",
-              sku: "",
-              category: "",
-              price: 0,
-              stock: 0,
-              status: "In Stock",
-            },
-          ];
-
-    setIsExporting(true);
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Products");
-
-    setTimeout(() => {
-      XLSX.writeFile(workbook, "products_inventory.xlsx");
-      setIsExporting(false);
-      toast.success("Products exported successfully");
-    }, 800);
+  const getProductsExportData = () => {
+    return products.length > 0
+      ? products.map((p) => ({
+          Name: p.name,
+          SKU: p.sku,
+          Category: p.category,
+          Price: p.price,
+          Stock: p.stock,
+          Status: p.status,
+        }))
+      : [
+          {
+            Name: "",
+            SKU: "",
+            Category: "",
+            Price: 0,
+            Stock: 0,
+            Status: "In Stock",
+          },
+        ];
   };
 
-  const importFromExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const handleImportProducts = async (json: any[]) => {
+    const importPromises: Promise<boolean>[] = [];
+    json.forEach((item) => {
+      const name = item.name || item.Name;
+      const sku = item.sku || item.SKU;
+      const category = item.category || item.Category;
+      const priceRaw = item.price !== undefined ? item.price : item.Price;
+      const stockRaw = item.stock !== undefined ? item.stock : item.Stock;
+      const status = item.status || item.Status;
 
-    setIsImporting(true);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: "binary" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const json = XLSX.utils.sheet_to_json(worksheet) as any[];
-
-        let importedCount = 0;
-        json.forEach((item) => {
-          // Basic validation and mapping
-          if (
-            item.name &&
-            item.sku &&
-            item.category &&
-            item.price !== undefined
-          ) {
-            addProduct({
-              name: String(item.name),
-              sku: String(item.sku),
-              category: String(item.category),
-              price: Number(item.price),
-              stock: Number(item.stock || 0),
-              status: (item.status as any) || "In Stock",
-            });
-            importedCount++;
-          }
-        });
-
-        setTimeout(() => {
-          setIsImporting(false);
-          toast.success(`Successfully imported ${importedCount} products`);
-        }, 1000);
-        event.target.value = ""; // Reset input
-      } catch (error) {
-        setIsImporting(false);
-        toast.error("Failed to import excel file");
-        console.error(error);
+      if (name && sku && category && priceRaw !== undefined) {
+        importPromises.push(
+          addProduct({
+            name: String(name),
+            sku: String(sku),
+            category: String(category),
+            price: Number(priceRaw),
+            stock: Number(stockRaw || 0),
+            status: (status as any) || "In Stock",
+          })
+        );
       }
-    };
-    reader.onerror = () => {
-      setIsImporting(false);
-      toast.error("Failed to read file");
-    };
-    reader.readAsBinaryString(file);
+    });
+
+    const results = await Promise.all(importPromises);
+    const importedCount = results.filter(Boolean).length;
+
+    if (importedCount > 0) {
+      toast.success(`Successfully imported ${importedCount} products`);
+    } else {
+      toast.error("No products were successfully imported. Please verify data format.");
+    }
   };
 
   const clearFilters = () => {
@@ -409,46 +374,13 @@ export default function Products() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <input
-                type="file"
-                accept=".xlsx, .xls, .csv"
-                id="product-import"
-                className="hidden"
-                onChange={importFromExcel}
+              <ImportExportActions
+                exportData={getProductsExportData}
+                exportFileName="products_inventory.xlsx"
+                sheetName="Products"
+                onImport={handleImportProducts}
+                showImport={canCreate}
               />
-              {canCreate && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={isImporting}
-                  className="h-10 rounded-xl border-blue-200 bg-blue-50/50 text-blue-600 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-900/30 dark:bg-blue-950/20 dark:text-blue-400"
-                  onClick={() =>
-                    document.getElementById("product-import")?.click()
-                  }
-                >
-                  {isImporting ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Upload className="mr-2 h-4 w-4" />
-                  )}
-                  {isImporting ? "Importing..." : "Import"}
-                </Button>
-              )}
-
-              <Button
-                type="button"
-                variant="outline"
-                disabled={isExporting}
-                className="h-10 rounded-xl border-emerald-200 bg-emerald-50/50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 dark:border-emerald-900/30 dark:bg-emerald-950/20 dark:text-emerald-400"
-                onClick={exportToExcel}
-              >
-                {isExporting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="mr-2 h-4 w-4" />
-                )}
-                {isExporting ? "Exporting..." : "Export"}
-              </Button>
 
               {canCreate && (
                 <Button
@@ -889,47 +821,20 @@ export default function Products() {
               </FormField>
             </div>
 
-            <div
-              className="rounded-2xl border border-dashed border-border bg-muted/50 p-5 cursor-pointer hover:bg-muted/80 transition-colors relative overflow-hidden"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleImageUpload}
-                accept="image/*"
-                className="hidden"
-              />
-              {watchedImage ? (
-                <div className="flex flex-col items-center gap-3">
-                  <div className="h-32 w-32 rounded-xl overflow-hidden border">
-                    <img
-                      src={watchedImage}
-                      alt="Preview"
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <p className="text-xs text-blue-600 font-medium">
-                    Click to change image
-                  </p>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-card text-muted-foreground shadow-sm">
-                    <Upload className="h-5 w-5" />
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      Upload Product Image
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Click here to select a file from your computer (JPG, PNG).
-                    </p>
-                  </div>
-                </div>
+            <Controller
+              control={control}
+              name="image"
+              render={({ field }) => (
+                <ImageUpload
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  folder="products"
+                  label="Upload Product Image"
+                  description="Click here to select a file from your computer (JPG, PNG)."
+                  variant="square"
+                />
               )}
-            </div>
+            />
 
             <div className="flex justify-end gap-3 pt-2">
               <Button
