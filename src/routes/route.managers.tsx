@@ -88,15 +88,6 @@ export const managerRoutes: AppRoute = {
       element: <Outlet />,
       children: [
         {
-          label: "Manage Admins",
-          path: "manage-admins",
-          element: (
-            <Suspense fallback={<SuspenseLoader />}>
-              <ManageAdmins />
-            </Suspense>
-          ),
-        },
-        {
           label: "Manage Staffs",
           path: "staffs",
           element: (

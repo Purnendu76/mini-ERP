@@ -106,6 +106,13 @@ export default function UserManagementTable({
     ? canPerformAction(currentUser.role, "delete", "users")
     : false;
 
+  const allowedRolesForCreation = useMemo(() => {
+    if (currentUser?.role === "Manager") {
+      return USER_ROLES.filter((r) => r.id !== "Admin");
+    }
+    return USER_ROLES;
+  }, [currentUser]);
+
   const [search, setSearch] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>();
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -489,7 +496,7 @@ export default function UserManagementTable({
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  {USER_ROLES.map((roleOpt) => (
+                  {allowedRolesForCreation.map((roleOpt) => (
                     <SelectItem key={roleOpt.id} value={roleOpt.id}>
                       {roleOpt.label}
                     </SelectItem>

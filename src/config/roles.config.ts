@@ -18,5 +18,5 @@ export type UserStatus = typeof USER_STATUSES[number]["id"];
 export const ROLE_PERMISSIONS: Record<UserRole, { create: boolean; view: boolean; edit: boolean; delete: boolean }> = {
   Admin: { create: true, view: true, edit: true, delete: true },
   Manager: { create: true, view: true, edit: true, delete: false },
-  Staff: { create: false, view: true, edit: false, delete: false },
+  Staff: { create: true, view: true, edit: true, delete: false },
 };
